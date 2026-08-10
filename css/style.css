@@ -1,7 +1,11 @@
 @font-face {
+
     font-family: "Vazirmatn";
+
     src: url("../assets/fonts/Vazirmatn-Regular.woff2");
+
 }
+
 
 
 :root {
@@ -11,6 +15,7 @@
     --background: #F9FAFC;
     --text: #111827;
     --white: #ffffff;
+    --muted: #64748b;
 
 }
 
@@ -26,10 +31,20 @@
 
 
 
+html {
+
+    scroll-behavior: smooth;
+
+}
+
+
+
 body {
 
-    font-family: "Vazirmatn", sans-serif;
+    font-family: "Vazirmatn", Arial, sans-serif;
+
     background: var(--background);
+
     color: var(--text);
 
 }
@@ -39,16 +54,29 @@ body {
 .container {
 
     width: min(1200px, 90%);
+
     margin: auto;
 
 }
 
 
 
+/* Header */
+
+
 .header {
 
+    background: rgba(255,255,255,.85);
+
+    backdrop-filter: blur(10px);
+
     padding: 25px 0;
-    background: var(--white);
+
+    position: sticky;
+
+    top:0;
+
+    z-index:100;
 
 }
 
@@ -56,20 +84,47 @@ body {
 
 .header .container {
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
 
 }
 
 
 
-.logo {
+.brand {
 
-    font-size: 26px;
-    font-weight: 800;
-    color: var(--primary);
-    letter-spacing: 1px;
+    text-decoration:none;
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+
+
+.brand-main {
+
+    color:var(--primary);
+
+    font-size:28px;
+
+    font-weight:900;
+
+    letter-spacing:1px;
+
+}
+
+
+
+.brand-sub {
+
+    font-size:12px;
+
+    color:var(--muted);
 
 }
 
@@ -77,8 +132,9 @@ body {
 
 .navigation {
 
-    display: flex;
-    gap: 30px;
+    display:flex;
+
+    gap:35px;
 
 }
 
@@ -86,30 +142,52 @@ body {
 
 .navigation a {
 
-    text-decoration: none;
-    color: var(--text);
-    font-size: 15px;
+    text-decoration:none;
+
+    color:var(--text);
+
+    font-size:15px;
+
+    transition:.3s;
 
 }
 
 
 
-.header-button,
-.primary-button {
+.navigation a:hover {
 
-    background: var(--primary);
-    color: white;
-    padding: 13px 25px;
-    border-radius: 10px;
-    text-decoration: none;
+    color:var(--accent);
 
 }
 
+
+
+.header-button {
+
+    background:var(--primary);
+
+    color:white;
+
+    padding:13px 25px;
+
+    border-radius:12px;
+
+    text-decoration:none;
+
+    font-size:14px;
+
+}
+
+
+
+
+
+/* Hero */
 
 
 .hero {
 
-    padding: 100px 0;
+    padding:90px 0 120px;
 
 }
 
@@ -117,9 +195,11 @@ body {
 
 .hero-container {
 
-    display: flex;
-    align-items: center;
-    gap: 60px;
+    display:flex;
+
+    align-items:center;
+
+    gap:70px;
 
 }
 
@@ -127,7 +207,7 @@ body {
 
 .hero-content {
 
-    flex: 1;
+    flex:1;
 
 }
 
@@ -135,9 +215,13 @@ body {
 
 .hero h1 {
 
-    font-size: 55px;
-    line-height: 1.4;
-    color: var(--primary);
+    font-size:58px;
+
+    line-height:1.45;
+
+    color:var(--primary);
+
+    font-weight:900;
 
 }
 
@@ -145,7 +229,7 @@ body {
 
 .hero h1 span {
 
-    color: var(--accent);
+    color:var(--accent);
 
 }
 
@@ -153,10 +237,15 @@ body {
 
 .hero p {
 
-    margin-top: 25px;
-    font-size: 18px;
-    line-height: 2;
-    max-width: 550px;
+    margin-top:25px;
+
+    max-width:560px;
+
+    line-height:2;
+
+    font-size:18px;
+
+    color:#475569;
 
 }
 
@@ -164,9 +253,27 @@ body {
 
 .hero-buttons {
 
-    margin-top: 40px;
-    display: flex;
-    gap: 15px;
+    display:flex;
+
+    gap:15px;
+
+    margin-top:40px;
+
+}
+
+
+
+.primary-button {
+
+    background:var(--primary);
+
+    color:white;
+
+    padding:15px 30px;
+
+    border-radius:12px;
+
+    text-decoration:none;
 
 }
 
@@ -174,40 +281,154 @@ body {
 
 .secondary-button {
 
-    padding: 13px 25px;
-    border-radius: 10px;
-    text-decoration: none;
-    border: 1px solid var(--primary);
-    color: var(--primary);
+    border:1px solid var(--primary);
+
+    color:var(--primary);
+
+    padding:15px 30px;
+
+    border-radius:12px;
+
+    text-decoration:none;
 
 }
 
+
+
+
+
+/* Brand message */
+
+
+.brand-message {
+
+    margin-top:35px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+
+
+.brand-message strong {
+
+    color:var(--primary);
+
+    font-size:20px;
+
+}
+
+
+
+.brand-message span {
+
+    color:var(--muted);
+
+}
+
+
+
+
+
+/* Hero visual */
 
 
 .hero-image {
 
-    flex: 1;
+    flex:1;
 
 }
 
 
 
-.hero-placeholder {
+.data-network {
 
-    height: 400px;
-    border-radius: 30px;
-    background: linear-gradient(
+    height:460px;
+
+    background:white;
+
+    border-radius:40px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border:1px solid #e5e7eb;
+
+    box-shadow:0 30px 70px rgba(15,23,42,.08);
+
+}
+
+
+
+.network-point {
+
+    background:var(--primary);
+
+    color:white;
+
+    padding:15px 35px;
+
+    border-radius:50px;
+
+    font-weight:bold;
+
+}
+
+
+
+.network-line {
+
+    width:2px;
+
+    height:45px;
+
+    background:var(--accent);
+
+}
+
+
+
+.network-core {
+
+    width:170px;
+
+    height:170px;
+
+    border-radius:50%;
+
+    background:linear-gradient(
+
         135deg,
+
         var(--primary),
+
         var(--accent)
+
     );
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display:flex;
 
-    color: white;
-    font-size: 35px;
-    font-weight: bold;
+    align-items:center;
+
+    justify-content:center;
+
+    text-align:center;
+
+    color:white;
+
+    font-weight:900;
+
+    line-height:1.8;
+
+    box-shadow:0 0 50px rgba(0,224,230,.35);
 
 }
