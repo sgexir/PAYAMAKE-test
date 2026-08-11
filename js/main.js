@@ -1,74 +1,151 @@
-const volumeSlider = document.querySelector(
-    '.pricing-slider input[type="range"]'
-);
+// PAYAMAKE Main JavaScript
 
 
-const volumeNumber = document.querySelector(
-    '.volume-number'
-);
+
+document.addEventListener("DOMContentLoaded", function () {
 
 
-const priceNumber = document.querySelector(
-    '.price-card h3'
-);
+
+/* ==========================
+   Pricing Calculator
+========================== */
+
+
+
+const volumeRange = document.getElementById("volumeRange");
+
+const volumeValue = document.getElementById("volumeValue");
+
+const customerLevel = document.getElementById("customerLevel");
+
+const priceValue = document.getElementById("priceValue");
+
+const pricingBox = document.querySelector(".premium-pricing-box");
+
+const pricingButton = document.querySelector(".pricing-benefits .primary-button");
+
+
+
+if (
+    volumeRange &&
+    volumeValue &&
+    customerLevel &&
+    priceValue
+) {
 
 
 
 function updatePricing(){
 
 
-    let volume = Number(volumeSlider.value);
-
-
-    let formattedVolume = volume.toLocaleString('fa-IR');
-
-
-    volumeNumber.innerHTML =
-        formattedVolume + " پیامک";
+    let volume = Number(volumeRange.value);
 
 
 
-    let price;
+    volumeValue.innerText =
+        volume.toLocaleString("fa-IR") + " پیامک";
 
 
 
-    if(volume < 100000){
+    if (volume <= 100000) {
 
-        price = 270;
+
+        customerLevel.innerText =
+            "مشتری عادی";
+
+        priceValue.innerText =
+            "270 تومان";
+
 
     }
 
 
-    else if(volume < 300000){
+    else if (volume <= 500000) {
 
-        price = 240;
+
+        customerLevel.innerText =
+            "VIP";
+
+        priceValue.innerText =
+            "240 تومان";
+
 
     }
 
 
-    else if(volume < 1000000){
+    else if (volume < 1000000) {
 
-        price = 220;
+
+        customerLevel.innerText =
+            "VIP حجیم";
+
+        priceValue.innerText =
+            "220 تومان";
+
 
     }
 
 
     else {
 
-        price = "اختصاصی";
+
+        customerLevel.innerText =
+            "سازمانی";
+
+        priceValue.innerText =
+            "تعرفه اختصاصی";
+
 
     }
 
 
 
-    priceNumber.innerHTML = price;
+    // حالت ظاهری سازمانی
+
+
+    if (volume >= 1000000) {
+
+
+        pricingBox.querySelector(".pricing-benefits").classList.add(
+    "enterprise-mode"
+);
+
+
+        if(pricingButton){
+
+            pricingButton.innerText =
+            "درخواست مشاوره سازمانی";
+
+        }
+
+
+    }
+
+
+    else {
+
+
+        pricingBox.querySelector(".pricing-benefits").classList.remove(
+    "enterprise-mode"
+);
+
+
+        if(pricingButton){
+
+            pricingButton.innerText =
+            "دریافت تعرفه اختصاصی";
+
+        }
+
+
+    }
 
 
 }
 
 
 
-volumeSlider.addEventListener(
+volumeRange.addEventListener(
     "input",
     updatePricing
 );
@@ -76,3 +153,12 @@ volumeSlider.addEventListener(
 
 
 updatePricing();
+
+
+
+}
+
+
+
+
+});
