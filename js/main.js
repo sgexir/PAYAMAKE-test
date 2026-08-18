@@ -1,15 +1,12 @@
 // PAYAMAKE Main JavaScript
 
 
-
 document.addEventListener("DOMContentLoaded", function () {
-
 
 
 /* ==========================
    Pricing Calculator
 ========================== */
-
 
 
 const volumeRange = document.getElementById("volumeRange");
@@ -25,7 +22,6 @@ const pricingBox = document.querySelector(".premium-pricing-box");
 const pricingButton = document.querySelector(".pricing-benefits .primary-button");
 
 
-
 if (
     volumeRange &&
     volumeValue &&
@@ -34,87 +30,133 @@ if (
 ) {
 
 
+    function updatePricing(){
 
-function updatePricing(){
-
-
-    let volume = Number(volumeRange.value);
+        let volume = Number(volumeRange.value);
 
 
-
-    volumeValue.innerText =
-        volume.toLocaleString("fa-IR") + " پیامک";
-
+        volumeValue.innerText =
+            volume.toLocaleString("fa-IR") + " پیامک";
 
 
-    if (volume <= 100000) {
+        /* ==========================
+           Premium Slider Progress
+        ========================== */
+
+        let min = Number(volumeRange.min);
+
+        let max = Number(volumeRange.max);
+
+        let percentage =
+            ((volume - min) / (max - min)) * 100;
 
 
-        customerLevel.innerText =
-            "مشتری عادی";
-
-        priceValue.innerText =
-            "270 تومان";
-
-
-    }
-
-
-    else if (volume <= 500000) {
+        volumeRange.style.background =
+            `linear-gradient(
+                to left,
+                #00e0e6 0%,
+                #00e0e6 ${percentage}%,
+                #e2e8f0 ${percentage}%,
+                #e2e8f0 100%
+            )`;
 
 
-        customerLevel.innerText =
-            "VIP";
-
-        priceValue.innerText =
-            "240 تومان";
+        /* ==========================
+           Pricing Levels
+        ========================== */
 
 
-    }
+        if (volume <= 100000) {
 
 
-    else if (volume < 1000000) {
+            customerLevel.innerText =
+                "مشتری عادی";
+
+            priceValue.innerText =
+                "270 تومان";
 
 
-        customerLevel.innerText =
-            "VIP حجیم";
-
-        priceValue.innerText =
-            "220 تومان";
+        }
 
 
-    }
+        else if (volume <= 500000) {
 
 
-    else {
+            customerLevel.innerText =
+                "VIP";
+
+            priceValue.innerText =
+                "240 تومان";
 
 
-        customerLevel.innerText =
-            "سازمانی";
-
-        priceValue.innerText =
-            "تعرفه اختصاصی";
+        }
 
 
-    }
+        else if (volume < 1000000) {
 
 
+            customerLevel.innerText =
+                "VIP حجیم";
 
-    // حالت ظاهری سازمانی
-
-
-    if (volume >= 1000000) {
-
-
-        pricingBox.querySelector(".pricing-benefits").classList.add(
-    "enterprise-mode"
-);
+            priceValue.innerText =
+                "220 تومان";
 
 
-        if(pricingButton){
+        }
 
-            pricingButton.innerText =
-            "درخواست مشاوره سازمانی";
+
+        else {
+
+
+            customerLevel.innerText =
+                "سازمانی";
+
+            priceValue.innerText =
+                "تعرفه اختصاصی";
+
+
+        }
+
+
+        /* ==========================
+           Enterprise Mode
+        ========================== */
+
+
+        if (volume >= 1000000) {
+
+
+            pricingBox
+                .querySelector(".pricing-benefits")
+                .classList.add("enterprise-mode");
+
+
+            if(pricingButton){
+
+                pricingButton.innerText =
+                    "درخواست مشاوره سازمانی";
+
+            }
+
+
+        }
+
+
+        else {
+
+
+            pricingBox
+                .querySelector(".pricing-benefits")
+                .classList.remove("enterprise-mode");
+
+
+            if(pricingButton){
+
+                pricingButton.innerText =
+                    "دریافت تعرفه اختصاصی";
+
+            }
+
 
         }
 
@@ -122,43 +164,16 @@ function updatePricing(){
     }
 
 
-    else {
+    volumeRange.addEventListener(
+        "input",
+        updatePricing
+    );
 
 
-        pricingBox.querySelector(".pricing-benefits").classList.remove(
-    "enterprise-mode"
-);
-
-
-        if(pricingButton){
-
-            pricingButton.innerText =
-            "دریافت تعرفه اختصاصی";
-
-        }
-
-
-    }
+    updatePricing();
 
 
 }
-
-
-
-volumeRange.addEventListener(
-    "input",
-    updatePricing
-);
-
-
-
-updatePricing();
-
-
-
-}
-
-
 
 
 });
