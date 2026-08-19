@@ -19,21 +19,53 @@ const priceValue = document.getElementById("priceValue");
 
 const pricingBox = document.querySelector(".premium-pricing-box");
 
-const pricingButton = document.querySelector(".pricing-benefits .primary-button");
+const pricingButton = document.querySelector(
+    ".pricing-benefits .primary-button"
+);
 
+
+/* ==========================
+   Enterprise Button
+========================== */
+
+const pricingControl = document.querySelector(
+    ".pricing-control"
+);
+
+const customerLevelBox = document.querySelector(
+    ".customer-level"
+);
+
+const originalButtonParent = pricingButton
+    ? pricingButton.parentElement
+    : null;
+
+
+/* ==========================
+   Safety Check
+========================== */
 
 if (
     volumeRange &&
     volumeValue &&
     customerLevel &&
-    priceValue
+    priceValue &&
+    pricingBox &&
+    pricingButton &&
+    pricingControl &&
+    customerLevelBox
 ) {
 
 
     function updatePricing(){
 
+
         let volume = Number(volumeRange.value);
 
+
+        /* ==========================
+           Volume Text
+        ========================== */
 
         volumeValue.innerText =
             volume.toLocaleString("fa-IR") + " پیامک";
@@ -123,20 +155,73 @@ if (
         ========================== */
 
 
+        const benefitsBox =
+            pricingBox.querySelector(
+                ".pricing-benefits"
+            );
+
+
         if (volume >= 1000000) {
 
 
-            pricingBox
-                .querySelector(".pricing-benefits")
-                .classList.add("enterprise-mode");
+            /* حالت سازمانی */
+
+            benefitsBox.classList.add(
+                "enterprise-mode"
+            );
 
 
-            if(pricingButton){
+            pricingBox.classList.add(
+                "enterprise-mode"
+            );
 
-                pricingButton.innerText =
-                    "درخواست مشاوره سازمانی";
+
+            /* متن دکمه */
+
+            pricingButton.innerText =
+                "درخواست مشاوره سازمانی";
+
+
+            /*
+             * انتقال دکمه:
+             * از باکس مزایا
+             * به زیر باکس های سطح همکاری
+             */
+
+            if (
+                pricingButton.parentElement !==
+                pricingControl
+            ) {
+
+                pricingControl.appendChild(
+                    pricingButton
+                );
 
             }
+
+
+            /* ظاهر دکمه در محل جدید */
+
+            pricingButton.style.display =
+                "flex";
+
+            pricingButton.style.alignItems =
+                "center";
+
+            pricingButton.style.justifyContent =
+                "center";
+
+            pricingButton.style.width =
+                "100%";
+
+            pricingButton.style.marginTop =
+                "20px";
+
+            pricingButton.style.boxSizing =
+                "border-box";
+
+            pricingButton.style.textAlign =
+                "center";
 
 
         }
@@ -145,17 +230,57 @@ if (
         else {
 
 
-            pricingBox
-                .querySelector(".pricing-benefits")
-                .classList.remove("enterprise-mode");
+            /* خروج از حالت سازمانی */
+
+            benefitsBox.classList.remove(
+                "enterprise-mode"
+            );
 
 
-            if(pricingButton){
+            pricingBox.classList.remove(
+                "enterprise-mode"
+            );
 
-                pricingButton.innerText =
-                    "دریافت تعرفه اختصاصی";
+
+            /* متن اصلی دکمه */
+
+            pricingButton.innerText =
+                "دریافت تعرفه اختصاصی";
+
+
+            /*
+             * برگرداندن دکمه
+             * به باکس مزایا
+             */
+
+            if (
+                originalButtonParent &&
+                pricingButton.parentElement !==
+                originalButtonParent
+            ) {
+
+                originalButtonParent.appendChild(
+                    pricingButton
+                );
 
             }
+
+
+            /* پاک کردن استایل های موقت */
+
+            pricingButton.style.display = "";
+
+            pricingButton.style.alignItems = "";
+
+            pricingButton.style.justifyContent = "";
+
+            pricingButton.style.width = "";
+
+            pricingButton.style.marginTop = "";
+
+            pricingButton.style.boxSizing = "";
+
+            pricingButton.style.textAlign = "";
 
 
         }
@@ -164,11 +289,19 @@ if (
     }
 
 
+    /* ==========================
+       Slider Event
+    ========================== */
+
     volumeRange.addEventListener(
         "input",
         updatePricing
     );
 
+
+    /* ==========================
+       Initial State
+    ========================== */
 
     updatePricing();
 
