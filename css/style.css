@@ -1489,6 +1489,10 @@ textarea {
         width: 100%;
     }
 
+    .hero-image img {
+    transform: scale(1.40);
+    }
+
     .hero-network {
         width: 330px;
         height: 330px;
