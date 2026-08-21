@@ -125,6 +125,55 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
+        function addOptionalContactFields() {
+            if (!contactForm || document.getElementById("contactBrand")) return;
+
+            const messageField = document.getElementById("contactMessage");
+            const messageGroup = messageField
+                ? messageField.closest(".contact-form-group")
+                : null;
+
+            if (!messageGroup) return;
+
+            const brandGroup = document.createElement("div");
+            brandGroup.className = "contact-form-group";
+            brandGroup.innerHTML = `
+                <label for="contactBrand">
+                    نام برند / کسب‌وکار
+                    <span>(اختیاری)</span>
+                </label>
+                <input
+                    type="text"
+                    id="contactBrand"
+                    name="brand"
+                    placeholder="نام برند یا کسب‌وکار"
+                    autocomplete="organization"
+                >
+            `;
+
+            const typeGroup = document.createElement("div");
+            typeGroup.className = "contact-form-group";
+            typeGroup.innerHTML = `
+                <label for="contactType">
+                    نیاز شما
+                    <span>(اختیاری)</span>
+                </label>
+                <select id="contactType" name="type">
+                    <option value="" selected></option>
+                    <option value="مشاوره پیامکی">مشاوره پیامکی</option>
+                    <option value="بانک شماره">بانک شماره</option>
+                    <option value="تعرفه و قیمت">تعرفه و قیمت</option>
+                    <option value="اجرای کمپین">اجرای کمپین</option>
+                    <option value="سایر">سایر</option>
+                </select>
+            `;
+
+            contactForm.insertBefore(brandGroup, messageGroup);
+            contactForm.insertBefore(typeGroup, messageGroup);
+        }
+
+        addOptionalContactFields();
+
         function openContactModal() {
             resetContactFormState();
 
