@@ -291,6 +291,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         !event.ctrlKey &&
                         !event.metaKey
                     ) {
+                        event.preventDefault();
                         showLimitMessage();
                     }
                 });
@@ -301,6 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         : "";
 
                     if (field.value.length + pastedText.length > 25) {
+                        event.preventDefault();
                         showLimitMessage();
                     }
                 });
@@ -311,21 +313,27 @@ document.addEventListener("DOMContentLoaded", function () {
              * CONTACT FORM FIELD LIMITS
              * =====================================================
              *
-             * Name and surname are required fields, but they also need
-             * to respect the same 25-character SMS.ir Pattern limit.
+             * The actual HTML form uses name="name" and id="contactName"
+             * for the full-name field. The previous implementation looked
+             * only for fullName/fullname/full_name, so it never attached
+             * maxlength or the warning handler to the real name input.
              *
-             * The form therefore enforces:
+             * The selector below deliberately supports both the current
+             * HTML field and the older naming variants so this protection
+             * cannot silently disappear if the field naming changes later.
              *
+             * Limits:
              * - Full name: required + maximum 25 characters
              * - Brand: optional + maximum 25 characters
              * - Custom need description: optional + maximum 25 characters
-             *
-             * The "Need" select itself does not require a text limit
-             * because its available options are predefined.
              */
 
             const fullNameField =
+                contactForm.elements.namedItem("name") ||
                 contactForm.elements.namedItem("fullName") ||
+                contactForm.elements.namedItem("fullname") ||
+                contactForm.elements.namedItem("full_name") ||
+                document.getElementById("contactName") ||
                 document.getElementById("fullName");
 
             const fullNameGroup = fullNameField
@@ -333,9 +341,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 : null;
 
             if (fullNameField && fullNameGroup) {
-                fullNameField.maxLength = 25;
-                fullNameField.title = "حداکثر ۲۵ کاراکتر";
-
                 setupPatternLimit(fullNameField, fullNameGroup);
             }
 
@@ -478,7 +483,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     "fullName",
                     "fullname",
                     "full_name",
-                    "name"
+                    "name",
+                    "contactName"
                 ]);
 
                 const phone = readField([
@@ -486,7 +492,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     "mobile",
                     "mobileNumber",
                     "phoneNumber",
-                    "tel"
+                    "tel",
+                    "contactPhone"
                 ]);
 
                 const brand = readField([
@@ -508,7 +515,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     "description",
                     "message",
                     "details",
-                    "text"
+                    "text",
+                    "contactMessage"
                 ]);
 
                 if (!fullName || !phone) {
