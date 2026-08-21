@@ -115,9 +115,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const contactType = document.getElementById("contactType");
             const customNeedField = document.getElementById("contactCustomNeedGroup");
+            const messageTextarea = document.getElementById("contactMessage");
 
             if (contactType) contactType.value = "";
             if (customNeedField) customNeedField.hidden = true;
+            if (messageTextarea) messageTextarea.value = "";
 
             if (contactFormMessage) {
                 contactFormMessage.innerText = "";
@@ -168,40 +170,38 @@ document.addEventListener("DOMContentLoaded", function () {
                 </select>
             `;
 
-            // Reuse the existing description field for the custom "سایر" case.
-            // It remains optional and is hidden until "سایر" is selected.
+            // Reuse the existing description textarea as the ONLY custom-need field.
+            // It stays optional and is hidden until "سایر" is selected.
             messageGroup.id = "contactCustomNeedGroup";
             const messageLabel = messageGroup.querySelector("label");
             const messageTextarea = messageGroup.querySelector("textarea");
 
             if (messageLabel) {
-                messageLabel.innerHTML = `
-                    <span id="contactMessageDefaultLabel">توضیحات</span>
-                    <span id="contactMessageCustomLabel" hidden>نیاز خود را توضیح دهید (اختیاری)</span>
-                `;
+                messageLabel.textContent = "نیاز خود را توضیح دهید (اختیاری)";
+                messageLabel.setAttribute("for", "contactMessage");
             }
+
+            if (messageTextarea) {
+                messageTextarea.placeholder = "نیاز خود را توضیح دهید...";
+            }
+
+            // Hide the single existing textarea until "سایر" is selected.
+            messageGroup.hidden = true;
 
             contactForm.insertBefore(brandGroup, messageGroup);
             contactForm.insertBefore(typeGroup, messageGroup);
 
             const contactType = document.getElementById("contactType");
-            const defaultLabel = document.getElementById("contactMessageDefaultLabel");
-            const customLabel = document.getElementById("contactMessageCustomLabel");
 
             if (contactType) {
                 contactType.addEventListener("change", function () {
                     const isOther = contactType.value === "سایر";
 
-                    messageGroup.hidden = false;
-                    if (customLabel) customLabel.hidden = !isOther;
-                    if (defaultLabel) defaultLabel.hidden = isOther;
+                    messageGroup.hidden = !isOther;
 
-                    // The existing description box is shown only for "سایر".
-                    // For other selections, keep the field hidden and empty.
                     if (!isOther && messageTextarea) {
                         messageTextarea.value = "";
                     }
-                    messageGroup.hidden = !isOther;
                 });
             }
         }
