@@ -119,6 +119,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 contactForm.reset();
             }
 
+            const customNeedField = document.getElementById("contactCustomNeed");
+            const customNeedGroup = document.getElementById("contactCustomNeedGroup");
+            if (customNeedField) customNeedField.value = "";
+            if (customNeedGroup) customNeedGroup.style.display = "none";
+
             if (contactFormMessage) {
                 contactFormMessage.innerText = "";
                 contactFormMessage.classList.remove("is-visible");
@@ -159,7 +164,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <span>(اختیاری)</span>
                 </label>
                 <select id="contactType" name="type">
-                    <option value="" selected></option>
+                    <option value="" selected>انتخاب کنید</option>
                     <option value="مشاوره پیامکی">مشاوره پیامکی</option>
                     <option value="بانک شماره">بانک شماره</option>
                     <option value="تعرفه و قیمت">تعرفه و قیمت</option>
@@ -168,8 +173,40 @@ document.addEventListener("DOMContentLoaded", function () {
                 </select>
             `;
 
+            const customNeedGroup = document.createElement("div");
+            customNeedGroup.className = "contact-form-group";
+            customNeedGroup.id = "contactCustomNeedGroup";
+            customNeedGroup.style.display = "none";
+            customNeedGroup.innerHTML = `
+                <label for="contactCustomNeed">
+                    نیاز خود را توضیح دهید
+                    <span>(اختیاری)</span>
+                </label>
+                <textarea
+                    id="contactCustomNeed"
+                    name="customNeed"
+                    rows="3"
+                    placeholder="در صورت تمایل، نیاز خود را توضیح دهید"
+                ></textarea>
+            `;
+
             contactForm.insertBefore(brandGroup, messageGroup);
             contactForm.insertBefore(typeGroup, messageGroup);
+            contactForm.insertBefore(customNeedGroup, messageGroup);
+
+            const typeField = document.getElementById("contactType");
+            if (typeField) {
+                typeField.addEventListener("change", function () {
+                    if (customNeedGroup) {
+                        customNeedGroup.style.display = this.value === "سایر" ? "" : "none";
+                    }
+
+                    if (this.value !== "سایر") {
+                        const customNeedField = document.getElementById("contactCustomNeed");
+                        if (customNeedField) customNeedField.value = "";
+                    }
+                });
+            }
         }
 
         addOptionalContactFields();
@@ -279,9 +316,19 @@ document.addEventListener("DOMContentLoaded", function () {
                     "type", "requestType", "request_type", "need", "subject"
                 ]);
 
-                const description = readField([
+                const customNeed = readField([
+                    "customNeed"
+                ]);
+
+                let description = readField([
                     "description", "message", "details", "text"
                 ]);
+
+                if (type === "سایر" && customNeed) {
+                    description = description
+                        ? `${description}\nنیاز تکمیلی: ${customNeed}`
+                        : `نیاز تکمیلی: ${customNeed}`;
+                }
 
                 if (!fullName || !phone) {
                     if (contactFormMessage) {
