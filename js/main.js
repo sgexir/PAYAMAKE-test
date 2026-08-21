@@ -2,6 +2,11 @@
 
 document.addEventListener("DOMContentLoaded", function () {
 
+    // index.html currently includes main.js twice. Guard the initializer so
+    // the contact form can never register duplicate handlers.
+    if (window.__PAYAMAKE_MAIN_INITIALIZED__) return;
+    window.__PAYAMAKE_MAIN_INITIALIZED__ = true;
+
     /* =========================================================
        PRICING CALCULATOR
     ========================================================= */
@@ -109,7 +114,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (contactModal) {
 
+        function resetContactFormState() {
+            if (contactForm) {
+                contactForm.reset();
+            }
+
+            if (contactFormMessage) {
+                contactFormMessage.innerText = "";
+                contactFormMessage.classList.remove("is-visible");
+            }
+        }
+
         function openContactModal() {
+            resetContactFormState();
+
             contactModal.classList.add("is-open");
             contactModal.setAttribute("aria-hidden", "false");
             document.body.classList.add("modal-open");
