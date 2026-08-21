@@ -66,17 +66,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 pricingButton.innerText = "درخواست مشاوره سازمانی";
 
-                if (
-                    mobileMediaQuery.matches &&
-                    pricingButton.parentElement !== pricingControl
-                ) {
+                if (mobileMediaQuery.matches && pricingButton.parentElement !== pricingControl) {
                     pricingControl.appendChild(pricingButton);
                 }
 
-                if (
-                    !mobileMediaQuery.matches &&
-                    pricingButton.parentElement !== originalButtonParent
-                ) {
+                if (!mobileMediaQuery.matches && pricingButton.parentElement !== originalButtonParent) {
                     originalButtonParent.appendChild(pricingButton);
                 }
 
@@ -119,10 +113,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 contactForm.reset();
             }
 
-            const customNeedField = document.getElementById("contactCustomNeed");
-            const customNeedGroup = document.getElementById("contactCustomNeedGroup");
-            if (customNeedField) customNeedField.value = "";
-            if (customNeedGroup) customNeedGroup.style.display = "none";
+            const contactType = document.getElementById("contactType");
+            const customNeedField = document.getElementById("contactCustomNeedGroup");
+
+            if (contactType) contactType.value = "";
+            if (customNeedField) customNeedField.hidden = true;
 
             if (contactFormMessage) {
                 contactFormMessage.innerText = "";
@@ -164,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <span>(اختیاری)</span>
                 </label>
                 <select id="contactType" name="type">
-                    <option value="" selected>انتخاب کنید</option>
+                    <option value="" selected></option>
                     <option value="مشاوره پیامکی">مشاوره پیامکی</option>
                     <option value="بانک شماره">بانک شماره</option>
                     <option value="تعرفه و قیمت">تعرفه و قیمت</option>
@@ -173,38 +168,40 @@ document.addEventListener("DOMContentLoaded", function () {
                 </select>
             `;
 
-            const customNeedGroup = document.createElement("div");
-            customNeedGroup.className = "contact-form-group";
-            customNeedGroup.id = "contactCustomNeedGroup";
-            customNeedGroup.style.display = "none";
-            customNeedGroup.innerHTML = `
-                <label for="contactCustomNeed">
-                    نیاز خود را توضیح دهید
-                    <span>(اختیاری)</span>
-                </label>
-                <textarea
-                    id="contactCustomNeed"
-                    name="customNeed"
-                    rows="3"
-                    placeholder="در صورت تمایل، نیاز خود را توضیح دهید"
-                ></textarea>
-            `;
+            // Reuse the existing description field for the custom "سایر" case.
+            // It remains optional and is hidden until "سایر" is selected.
+            messageGroup.id = "contactCustomNeedGroup";
+            const messageLabel = messageGroup.querySelector("label");
+            const messageTextarea = messageGroup.querySelector("textarea");
+
+            if (messageLabel) {
+                messageLabel.innerHTML = `
+                    <span id="contactMessageDefaultLabel">توضیحات</span>
+                    <span id="contactMessageCustomLabel" hidden>نیاز خود را توضیح دهید (اختیاری)</span>
+                `;
+            }
 
             contactForm.insertBefore(brandGroup, messageGroup);
             contactForm.insertBefore(typeGroup, messageGroup);
-            contactForm.insertBefore(customNeedGroup, messageGroup);
 
-            const typeField = document.getElementById("contactType");
-            if (typeField) {
-                typeField.addEventListener("change", function () {
-                    if (customNeedGroup) {
-                        customNeedGroup.style.display = this.value === "سایر" ? "" : "none";
-                    }
+            const contactType = document.getElementById("contactType");
+            const defaultLabel = document.getElementById("contactMessageDefaultLabel");
+            const customLabel = document.getElementById("contactMessageCustomLabel");
 
-                    if (this.value !== "سایر") {
-                        const customNeedField = document.getElementById("contactCustomNeed");
-                        if (customNeedField) customNeedField.value = "";
+            if (contactType) {
+                contactType.addEventListener("change", function () {
+                    const isOther = contactType.value === "سایر";
+
+                    messageGroup.hidden = false;
+                    if (customLabel) customLabel.hidden = !isOther;
+                    if (defaultLabel) defaultLabel.hidden = isOther;
+
+                    // The existing description box is shown only for "سایر".
+                    // For other selections, keep the field hidden and empty.
+                    if (!isOther && messageTextarea) {
+                        messageTextarea.value = "";
                     }
+                    messageGroup.hidden = !isOther;
                 });
             }
         }
@@ -300,40 +297,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     return "";
                 }
 
-                const fullName = readField([
-                    "fullName", "fullname", "full_name", "name"
-                ]);
-
-                const phone = readField([
-                    "phone", "mobile", "mobileNumber", "phoneNumber", "tel"
-                ]);
-
-                const brand = readField([
-                    "brand", "company", "companyName", "business"
-                ]);
-
-                const type = readField([
-                    "type", "requestType", "request_type", "need", "subject"
-                ]);
-
-                const customNeed = readField([
-                    "customNeed"
-                ]);
-
-                let description = readField([
-                    "description", "message", "details", "text"
-                ]);
-
-                if (type === "سایر" && customNeed) {
-                    description = description
-                        ? `${description}\nنیاز تکمیلی: ${customNeed}`
-                        : `نیاز تکمیلی: ${customNeed}`;
-                }
+                const fullName = readField(["fullName", "fullname", "full_name", "name"]);
+                const phone = readField(["phone", "mobile", "mobileNumber", "phoneNumber", "tel"]);
+                const brand = readField(["brand", "company", "companyName", "business"]);
+                const type = readField(["type", "requestType", "request_type", "need", "subject"]);
+                const description = readField(["description", "message", "details", "text"]);
 
                 if (!fullName || !phone) {
                     if (contactFormMessage) {
-                        contactFormMessage.innerText =
-                            "لطفاً نام و شماره موبایل خود را وارد کنید.";
+                        contactFormMessage.innerText = "لطفاً نام و شماره موبایل خود را وارد کنید.";
                         contactFormMessage.classList.add("is-visible");
                     }
                     return;
@@ -358,9 +330,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         "https://payamake-contact.sgexir.workers.dev/",
                         {
                             method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
+                            headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 fullName,
                                 phone,
@@ -376,22 +346,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     try {
                         result = await response.json();
                     } catch {
-                        result = {
-                            success: false,
-                            error: "پاسخ نامعتبر از سرور دریافت شد."
-                        };
+                        result = { success: false, error: "پاسخ نامعتبر از سرور دریافت شد." };
                     }
 
                     if (!response.ok || !result.success) {
-                        throw new Error(
-                            result.error ||
-                            "ثبت درخواست انجام نشد. لطفاً دوباره تلاش کنید."
-                        );
+                        throw new Error(result.error || "ثبت درخواست انجام نشد. لطفاً دوباره تلاش کنید.");
                     }
 
                     if (contactFormMessage) {
-                        contactFormMessage.innerText =
-                            "درخواست شما با موفقیت دریافت شد. به‌زودی با شما تماس می‌گیریم.";
+                        contactFormMessage.innerText = "درخواست شما با موفقیت دریافت شد. به‌زودی با شما تماس می‌گیریم.";
                         contactFormMessage.classList.add("is-visible");
                     }
 
@@ -400,16 +363,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     console.error("Contact form error:", error);
 
                     if (contactFormMessage) {
-                        contactFormMessage.innerText =
-                            error instanceof Error
-                                ? error.message
-                                : "ارسال درخواست انجام نشد. لطفاً دوباره تلاش کنید.";
+                        contactFormMessage.innerText = error instanceof Error
+                            ? error.message
+                            : "ارسال درخواست انجام نشد. لطفاً دوباره تلاش کنید.";
                         contactFormMessage.classList.add("is-visible");
                     }
                 } finally {
                     if (submitButton) {
                         submitButton.disabled = false;
-
                         if ("value" in submitButton) {
                             submitButton.value = originalButtonText;
                         } else {
