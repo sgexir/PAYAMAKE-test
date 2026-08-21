@@ -47,7 +47,7 @@
 <nav class="navigation">
 <a href="../../index.html">خانه</a><a href="../../index.html">راهکارها</a><a href="../../index.html">بانک شماره</a><a href="../../index.html">امکانات</a><a href="../../index.html">تعرفه</a><a href="../index.html">مقالات</a><a href="../../index.html">درباره ما</a>
 </nav>
-<a href="../../index.html#contact" class="header-button">مشاوره رایگان</a>
+<a href="#" class="header-button">مشاوره رایگان</a>
 </div>
 </header>
 <main>
@@ -97,12 +97,45 @@
 <h2 id="checklist">چک‌لیست زمان‌بندی یک کمپین پیامکی</h2><ul class="article-checklist"><li>می‌دانم مخاطب کمپین چه کسی است.</li><li>هدف پیام را مشخص کرده‌ام.</li><li>می‌دانم مخاطب چه زمانی احتمالاً فرصت بررسی پیشنهاد را دارد.</li><li>ساعت ارسال با نوع کسب‌وکار و نوع پیام هماهنگ است.</li><li>ساعات نامناسب و آزاردهنده را حذف کرده‌ام.</li><li>اگر کمپین باعث تماس می‌شود، امکان پاسخ‌گویی در آن زمان را دارم.</li><li>برای مقایسه زمان‌ها یک معیار مشخص تعریف کرده‌ام.</li><li>اگر امکانش باشد، دو زمان مختلف را با گروه‌های مشابه آزمایش می‌کنم.</li><li>نتیجه هر ارسال را ثبت می‌کنم.</li><li>تصمیم بعدی را بر اساس داده کمپین‌های قبلی می‌گیرم.</li></ul>
 <h2>جمع‌بندی</h2><p>اگر به دنبال یک پاسخ کوتاه برای سؤال «بهترین زمان ارسال پیامک تبلیغاتی چه زمانی است؟» هستید، پاسخ واقعی این است: <strong>زمانی که مخاطب شما آماده دریافت و انجام اقدام موردنظر کمپین است.</strong> بازه‌های عمومی می‌توانند برای شروع آزمایش مفید باشند، اما جای داده واقعی مشتریان شما را نمی‌گیرند.</p>
 <p>زمان‌بندی را مانند یک متغیر قابل آزمایش ببینید. مخاطب را دقیق انتخاب کنید، پیشنهاد و متن را مشخص نگه دارید، زمان‌های مختلف را با گروه‌های مشابه مقایسه کنید و نتیجه را ثبت کنید. به این ترتیب، به جای دنبال کردن یک «ساعت جادویی»، به یک زمان‌بندی متناسب با کسب‌وکار خودتان می‌رسید.</p>
-<div class="article-cta"><span>می‌خواهید زمان‌بندی کمپین پیامکی خودتان را دقیق‌تر انتخاب کنید؟</span><strong>قبل از تعیین ساعت ارسال، مخاطب و هدف کمپین را مشخص کنید.</strong><a href="../../index.html" class="primary-button">دریافت مشاوره</a></div>
+<div class="article-cta"><span>می‌خواهید زمان‌بندی کمپین پیامکی خودتان را دقیق‌تر انتخاب کنید؟</span><strong>قبل از تعیین ساعت ارسال، مخاطب و هدف کمپین را مشخص کنید.</strong><a href="#" class="primary-button">دریافت مشاوره</a></div>
 <div class="article-footer-links"><a href="../index.html">← بازگشت به مقالات</a><a href="../sms-marketing-guide/index.html">مطالعه مقاله بازاریابی پیامکی →</a></div>
 </div></div>
 </article>
 </main>
-<footer class="footer"><div class="container"><div class="footer-grid"><div class="footer-brand"><h3>PAYAMAKE</h3><p>پیامی که می‌فرستید،<br>نتیجه‌ای که می‌سازید.</p></div><div class="footer-links"><h4>خدمات</h4><ul><li>پنل پیامکی</li><li>بانک شماره تخصصی</li><li>اجرای کمپین</li><li>API پیامکی</li><li>تعرفه سازمانی</li></ul></div><div class="footer-links"><h4>ارتباط با ما</h4><ul><li>تماس با PAYAMAKE</li><li>مشاوره و انتخاب سرویس</li><li>پشتیبانی</li></ul></div></div><div class="footer-bottom">© PAYAMAKE - تمامی حقوق محفوظ است.</div></div></footer>
+
+<!-- ==========================
+     Contact Modal
+     Shared with the main PAYAMAKE site.
+========================== -->
+<div class="contact-modal" id="contactModal" aria-hidden="true">
+    <div class="contact-modal-overlay"></div>
+    <div class="contact-modal-box" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle">
+        <button type="button" class="contact-modal-close" id="contactModalClose" aria-label="بستن">&times;</button>
+        <div class="contact-modal-header">
+            <span class="contact-modal-badge">PAYAMAKE</span>
+            <h2 id="contactModalTitle">مشاوره رایگان</h2>
+            <p>اطلاعات خود را وارد کنید تا کارشناسان PAYAMAKE با شما تماس بگیرند.</p>
+        </div>
+        <form class="contact-form" id="contactForm">
+            <div class="contact-form-group">
+                <label for="contactName">نام و نام خانوادگی</label>
+                <input type="text" id="contactName" name="name" placeholder="نام و نام خانوادگی" autocomplete="name" required>
+            </div>
+            <div class="contact-form-group">
+                <label for="contactPhone">شماره موبایل</label>
+                <input type="tel" id="contactPhone" name="phone" placeholder="09xxxxxxxxx" autocomplete="tel" inputmode="tel" required>
+            </div>
+            <div class="contact-form-group">
+                <label for="contactMessage">توضیحات <span>(اختیاری)</span></label>
+                <textarea id="contactMessage" name="message" rows="4" placeholder="موضوع یا توضیحات خود را بنویسید..."></textarea>
+            </div>
+            <button type="submit" class="primary-button contact-submit">درخواست مشاوره</button>
+            <div class="contact-form-message" id="contactFormMessage" aria-live="polite"></div>
+        </form>
+    </div>
+</div>
+
+<footer class="footer"><div class="container"><div class="footer-grid"><div class="footer-brand"><h3>PAYAMAKE</h3><p>پیامی که می‌فرستید،<br>نتیجه‌ای که می‌سازید.</p></div><div class="footer-links"><h4>خدمات</h4><ul><li>پنل پیامکی</li><li>بانک شماره تخصصی</li><li>اجرای کمپین</li><li>API پیامکی</li><li>تعرفه سازمانی</li></ul></div><div class="footer-links"><h4>ارتباط با ما</h4><ul><li>تماس با PAYAMAKE</li><li><a href="#">مشاوره و انتخاب سرویس</a></li><li>پشتیبانی</li></ul></div></div><div class="footer-bottom">© PAYAMAKE - تمامی حقوق محفوظ است.</div></div></footer>
 <script src="../../js/main.js"></script>
 </body>
 </html>
