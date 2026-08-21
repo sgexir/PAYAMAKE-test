@@ -1128,6 +1128,114 @@ PAYAMAKE
 
 <script src="js/main.js"></script>
 
+<!-- ==========================
+     Contact Modal
+========================== -->
+
+<div class="contact-modal" id="contactModal" aria-hidden="true">
+
+    <div class="contact-modal-overlay"></div>
+
+    <div class="contact-modal-box" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle">
+
+        <button
+            type="button"
+            class="contact-modal-close"
+            id="contactModalClose"
+            aria-label="بستن"
+        >
+            &times;
+        </button>
+
+        <div class="contact-modal-header">
+
+            <span class="contact-modal-badge">
+                PAYAMAKE
+            </span>
+
+            <h2 id="contactModalTitle">
+                مشاوره رایگان
+            </h2>
+
+            <p>
+                اطلاعات خود را وارد کنید تا کارشناسان PAYAMAKE با شما تماس بگیرند.
+            </p>
+
+        </div>
+
+        <form class="contact-form" id="contactForm">
+
+            <div class="contact-form-group">
+
+                <label for="contactName">
+                    نام و نام خانوادگی
+                </label>
+
+                <input
+                    type="text"
+                    id="contactName"
+                    name="name"
+                    placeholder="نام و نام خانوادگی"
+                    autocomplete="name"
+                    required
+                >
+
+            </div>
+
+            <div class="contact-form-group">
+
+                <label for="contactPhone">
+                    شماره موبایل
+                </label>
+
+                <input
+                    type="tel"
+                    id="contactPhone"
+                    name="phone"
+                    placeholder="09xxxxxxxxx"
+                    autocomplete="tel"
+                    inputmode="tel"
+                    required
+                >
+
+            </div>
+
+            <div class="contact-form-group">
+
+                <label for="contactMessage">
+                    توضیحات
+                    <span>(اختیاری)</span>
+                </label>
+
+                <textarea
+                    id="contactMessage"
+                    name="message"
+                    rows="4"
+                    placeholder="موضوع یا توضیحات خود را بنویسید..."
+                ></textarea>
+
+            </div>
+
+            <button
+                type="submit"
+                class="primary-button contact-submit"
+            >
+                درخواست مشاوره
+            </button>
+
+            <div
+                class="contact-form-message"
+                id="contactFormMessage"
+                aria-live="polite"
+            ></div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script src="js/main.js"></script>
 
 </body>
 

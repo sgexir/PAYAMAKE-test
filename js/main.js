@@ -1,159 +1,55 @@
 // PAYAMAKE Main JavaScript
 
-
 document.addEventListener("DOMContentLoaded", function () {
 
 
-/* ==========================
-   Pricing Calculator
-========================== */
+    /* =========================================================
+       PRICING CALCULATOR
+    ========================================================= */
+
+    const volumeRange =
+        document.getElementById("volumeRange");
+
+    const volumeValue =
+        document.getElementById("volumeValue");
+
+    const customerLevel =
+        document.getElementById("customerLevel");
+
+    const priceValue =
+        document.getElementById("priceValue");
+
+    const pricingBox =
+        document.querySelector(".premium-pricing-box");
+
+    const pricingButton =
+        document.querySelector(
+            ".pricing-benefits .primary-button"
+        );
+
+    const pricingControl =
+        document.querySelector(".pricing-control");
+
+    const originalButtonParent =
+        pricingButton
+            ? pricingButton.parentElement
+            : null;
 
 
-const volumeRange = document.getElementById("volumeRange");
+    /* =========================================================
+       PRICING INITIALIZATION
+    ========================================================= */
 
-const volumeValue = document.getElementById("volumeValue");
-
-const customerLevel = document.getElementById("customerLevel");
-
-const priceValue = document.getElementById("priceValue");
-
-const pricingBox = document.querySelector(".premium-pricing-box");
-
-const pricingButton = document.querySelector(
-    ".pricing-benefits .primary-button"
-);
-
-
-/* ==========================
-   Enterprise Button
-========================== */
-
-const pricingControl = document.querySelector(
-    ".pricing-control"
-);
-
-const customerLevelBox = document.querySelector(
-    ".customer-level"
-);
-
-const originalButtonParent = pricingButton
-    ? pricingButton.parentElement
-    : null;
-
-
-/* ==========================
-   Safety Check
-========================== */
-
-if (
-    volumeRange &&
-    volumeValue &&
-    customerLevel &&
-    priceValue &&
-    pricingBox &&
-    pricingButton &&
-    pricingControl &&
-    customerLevelBox
-) {
-
-
-    function updatePricing(){
-
-
-        let volume = Number(volumeRange.value);
-
-
-        /* ==========================
-           Volume Text
-        ========================== */
-
-        volumeValue.innerText =
-            volume.toLocaleString("fa-IR") + " پیامک";
-
-
-        /* ==========================
-           Premium Slider Progress
-        ========================== */
-
-        let min = Number(volumeRange.min);
-
-        let max = Number(volumeRange.max);
-
-        let percentage =
-            ((volume - min) / (max - min)) * 100;
-
-
-        volumeRange.style.background =
-            `linear-gradient(
-                to left,
-                #00e0e6 0%,
-                #00e0e6 ${percentage}%,
-                #e2e8f0 ${percentage}%,
-                #e2e8f0 100%
-            )`;
-
-
-        /* ==========================
-           Pricing Levels
-        ========================== */
-
-
-        if (volume <= 100000) {
-
-
-            customerLevel.innerText =
-                "مشتری عادی";
-
-            priceValue.innerText =
-                "270 تومان";
-
-
-        }
-
-
-        else if (volume <= 500000) {
-
-
-            customerLevel.innerText =
-                "VIP";
-
-            priceValue.innerText =
-                "240 تومان";
-
-
-        }
-
-
-        else if (volume < 1000000) {
-
-
-            customerLevel.innerText =
-                "VIP حجیم";
-
-            priceValue.innerText =
-                "220 تومان";
-
-
-        }
-
-
-        else {
-
-
-            customerLevel.innerText =
-                "سازمانی";
-
-            priceValue.innerText =
-                "تعرفه اختصاصی";
-
-
-        }
-
-
-        /* ==========================
-           Enterprise Mode
-        ========================== */
-
+    if (
+        volumeRange &&
+        volumeValue &&
+        customerLevel &&
+        priceValue &&
+        pricingBox &&
+        pricingButton &&
+        pricingControl &&
+        originalButtonParent
+    ) {
 
         const benefitsBox =
             pricingBox.querySelector(
@@ -161,152 +57,507 @@ if (
             );
 
 
-        if (volume >= 1000000) {
+        /*
+         * فقط موبایل اجازه دارد دکمه را
+         * به بخش pricing-control منتقل کند.
+         *
+         * دسکتاپ همیشه جای اصلی دکمه را حفظ می‌کند.
+         */
 
-
-            /* حالت سازمانی */
-
-            benefitsBox.classList.add(
-                "enterprise-mode"
+        const mobileMediaQuery =
+            window.matchMedia(
+                "(max-width: 768px)"
             );
 
 
-            pricingBox.classList.add(
-                "enterprise-mode"
-            );
+        function updatePricing() {
+
+            const volume =
+                Number(volumeRange.value);
 
 
-            /* متن دکمه */
+            /* =====================================================
+               Volume Text
+            ===================================================== */
 
-            pricingButton.innerText =
-                "درخواست مشاوره سازمانی";
+            volumeValue.innerText =
+                volume.toLocaleString("fa-IR") +
+                " پیامک";
 
 
-            /*
-             * انتقال دکمه:
-             * از باکس مزایا
-             * به زیر باکس های سطح همکاری
-             */
+            /* =====================================================
+               Slider Progress
+            ===================================================== */
 
-            if (
-                pricingButton.parentElement !==
-                pricingControl
-            ) {
+            const min =
+                Number(volumeRange.min);
 
-                pricingControl.appendChild(
-                    pricingButton
-                );
+            const max =
+                Number(volumeRange.max);
+
+            const percentage =
+                ((volume - min) / (max - min)) * 100;
+
+
+            volumeRange.style.background =
+                `linear-gradient(
+                    to left,
+                    #00e0e6 0%,
+                    #00e0e6 ${percentage}%,
+                    #e2e8f0 ${percentage}%,
+                    #e2e8f0 100%
+                )`;
+
+
+            /* =====================================================
+               Pricing Levels
+            ===================================================== */
+
+            if (volume <= 100000) {
+
+                customerLevel.innerText =
+                    "مشتری عادی";
+
+                priceValue.innerText =
+                    "270 تومان";
+
+            }
+
+            else if (volume <= 500000) {
+
+                customerLevel.innerText =
+                    "VIP";
+
+                priceValue.innerText =
+                    "240 تومان";
+
+            }
+
+            else if (volume < 1000000) {
+
+                customerLevel.innerText =
+                    "VIP حجیم";
+
+                priceValue.innerText =
+                    "220 تومان";
+
+            }
+
+            else {
+
+                customerLevel.innerText =
+                    "سازمانی";
+
+                priceValue.innerText =
+                    "تعرفه اختصاصی";
 
             }
 
 
-            /* ظاهر دکمه در محل جدید */
+            /* =====================================================
+               Enterprise Mode
+            ===================================================== */
 
-            pricingButton.style.display =
-                "flex";
-
-            pricingButton.style.alignItems =
-                "center";
-
-            pricingButton.style.justifyContent =
-                "center";
-
-            pricingButton.style.width =
-                "100%";
-
-            pricingButton.style.marginTop =
-                "20px";
-
-            pricingButton.style.boxSizing =
-                "border-box";
-
-            pricingButton.style.textAlign =
-                "center";
+            const isEnterprise =
+                volume >= 1000000;
 
 
-        }
+            if (isEnterprise) {
+
+                pricingBox.classList.add(
+                    "enterprise-mode"
+                );
+
+                if (benefitsBox) {
+
+                    benefitsBox.classList.add(
+                        "enterprise-mode"
+                    );
+
+                }
 
 
-        else {
+                pricingButton.innerText =
+                    "درخواست مشاوره سازمانی";
 
 
-            /* خروج از حالت سازمانی */
+                /*
+                 * نکته مهم:
+                 *
+                 * فقط در موبایل دکمه را از
+                 * pricing-benefits خارج می‌کنیم.
+                 *
+                 * در دسکتاپ دکمه سر جای اصلی خودش
+                 * باقی می‌ماند.
+                 */
 
-            benefitsBox.classList.remove(
-                "enterprise-mode"
-            );
+                if (
+                    mobileMediaQuery.matches &&
+                    pricingButton.parentElement !==
+                    pricingControl
+                ) {
+
+                    pricingControl.appendChild(
+                        pricingButton
+                    );
+
+                }
 
 
-            pricingBox.classList.remove(
-                "enterprise-mode"
-            );
+                /*
+                 * اگر دسکتاپ است،
+                 * دکمه را حتماً به جای اصلی برگردان.
+                 */
+
+                if (
+                    !mobileMediaQuery.matches &&
+                    pricingButton.parentElement !==
+                    originalButtonParent
+                ) {
+
+                    originalButtonParent.appendChild(
+                        pricingButton
+                    );
+
+                }
 
 
-            /* متن اصلی دکمه */
+                /*
+                 * کلاس اختصاصی برای حالت سازمانی
+                 */
 
-            pricingButton.innerText =
-                "دریافت تعرفه اختصاصی";
-
-
-            /*
-             * برگرداندن دکمه
-             * به باکس مزایا
-             */
-
-            if (
-                originalButtonParent &&
-                pricingButton.parentElement !==
-                originalButtonParent
-            ) {
-
-                originalButtonParent.appendChild(
-                    pricingButton
+                pricingButton.classList.add(
+                    "enterprise-button"
                 );
 
             }
 
+            else {
 
-            /* پاک کردن استایل های موقت */
+                pricingBox.classList.remove(
+                    "enterprise-mode"
+                );
 
-            pricingButton.style.display = "";
+                if (benefitsBox) {
 
-            pricingButton.style.alignItems = "";
+                    benefitsBox.classList.remove(
+                        "enterprise-mode"
+                    );
 
-            pricingButton.style.justifyContent = "";
+                }
 
-            pricingButton.style.width = "";
 
-            pricingButton.style.marginTop = "";
+                /* =================================================
+                   Normal Button
+                ================================================= */
 
-            pricingButton.style.boxSizing = "";
+                pricingButton.innerText =
+                    "دریافت تعرفه اختصاصی";
 
-            pricingButton.style.textAlign = "";
 
+                /*
+                 * در حالت عادی همیشه دکمه
+                 * به محل اصلی خودش برمی‌گردد.
+                 */
+
+                if (
+                    pricingButton.parentElement !==
+                    originalButtonParent
+                ) {
+
+                    originalButtonParent.appendChild(
+                        pricingButton
+                    );
+
+                }
+
+
+                pricingButton.classList.remove(
+                    "enterprise-button"
+                );
+
+            }
 
         }
 
+
+        /* =========================================================
+           Slider Event
+        ========================================================= */
+
+        volumeRange.addEventListener(
+            "input",
+            updatePricing
+        );
+
+
+        /* =========================================================
+           Responsive Event
+           
+           اگر کاربر بین موبایل و دسکتاپ
+           تغییر اندازه بدهد، جای دکمه اصلاح می‌شود.
+        ========================================================= */
+
+        mobileMediaQuery.addEventListener(
+            "change",
+            updatePricing
+        );
+
+
+        /* =========================================================
+           Initial State
+        ========================================================= */
+
+        updatePricing();
 
     }
 
 
-    /* ==========================
-       Slider Event
-    ========================== */
+    /* =========================================================
+       CONTACT MODAL
+    ========================================================= */
 
-    volumeRange.addEventListener(
-        "input",
-        updatePricing
-    );
+    const contactModal =
+        document.getElementById("contactModal");
+
+    const contactModalClose =
+        document.getElementById(
+            "contactModalClose"
+        );
+
+    const contactModalOverlay =
+        contactModal
+            ? contactModal.querySelector(
+                ".contact-modal-overlay"
+            )
+            : null;
+
+    const contactForm =
+        document.getElementById(
+            "contactForm"
+        );
+
+    const contactFormMessage =
+        document.getElementById(
+            "contactFormMessage"
+        );
 
 
-    /* ==========================
-       Initial State
-    ========================== */
+    /*
+     * اگر Modal وجود نداشت،
+     * فقط بخش Modal متوقف شود.
+     *
+     * Pricing همچنان کار می‌کند.
+     */
 
-    updatePricing();
+    if (contactModal) {
 
 
-}
+        /* =====================================================
+           Open Modal
+        ===================================================== */
 
+        function openContactModal() {
+
+            contactModal.classList.add(
+                "is-open"
+            );
+
+            contactModal.setAttribute(
+                "aria-hidden",
+                "false"
+            );
+
+            document.body.classList.add(
+                "modal-open"
+            );
+
+
+            /*
+             * Focus روی اولین فیلد فرم
+             */
+
+            const firstInput =
+                contactModal.querySelector(
+                    "input"
+                );
+
+            if (firstInput) {
+
+                setTimeout(
+                    function () {
+
+                        firstInput.focus();
+
+                    },
+                    100
+                );
+
+            }
+
+        }
+
+
+        /* =====================================================
+           Close Modal
+        ===================================================== */
+
+        function closeContactModal() {
+
+            contactModal.classList.remove(
+                "is-open"
+            );
+
+            contactModal.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+
+            document.body.classList.remove(
+                "modal-open"
+            );
+
+        }
+
+
+        /* =====================================================
+           Contact Buttons
+        ===================================================== */
+
+        const contactButtons =
+            document.querySelectorAll(
+                'a[href="#"]'
+            );
+
+
+        contactButtons.forEach(
+            function (button) {
+
+                const buttonText =
+                    button.innerText.trim();
+
+
+                const isContactButton =
+                    buttonText.includes(
+                        "مشاوره"
+                    ) ||
+                    buttonText.includes(
+                        "شروع همکاری"
+                    ) ||
+                    buttonText.includes(
+                        "درخواست مشاوره"
+                    );
+
+
+                if (!isContactButton) {
+                    return;
+                }
+
+
+                button.addEventListener(
+                    "click",
+                    function (event) {
+
+                        event.preventDefault();
+
+                        openContactModal();
+
+                    }
+                );
+
+            }
+        );
+
+
+        /* =====================================================
+           Close Button
+        ===================================================== */
+
+        if (contactModalClose) {
+
+            contactModalClose.addEventListener(
+                "click",
+                function () {
+
+                    closeContactModal();
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           Overlay Click
+        ===================================================== */
+
+        if (contactModalOverlay) {
+
+            contactModalOverlay.addEventListener(
+                "click",
+                function () {
+
+                    closeContactModal();
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           ESC Key
+        ===================================================== */
+
+        document.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key === "Escape" &&
+                    contactModal.classList.contains(
+                        "is-open"
+                    )
+                ) {
+
+                    closeContactModal();
+
+                }
+
+            }
+        );
+
+
+        /* =====================================================
+           Prevent Form Submit
+           Temporary Frontend
+        ===================================================== */
+
+        if (contactForm) {
+
+            contactForm.addEventListener(
+                "submit",
+                function (event) {
+
+                    event.preventDefault();
+
+
+                    if (contactFormMessage) {
+
+                        contactFormMessage.innerText =
+                            "درخواست شما ثبت شد. کارشناسان PAYAMAKE با شما تماس خواهند گرفت.";
+
+                        contactFormMessage.classList.add(
+                            "is-visible"
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+    }
 
 });

@@ -40,6 +40,8 @@
 
 html {
     scroll-behavior: smooth;
+    width: 100%;
+    max-width: 100%;
 }
 
 html,
@@ -812,9 +814,6 @@ textarea {
     background: #ffffff;
 }
 
-
-/* Outer wrapper — desktop */
-
 .premium-pricing-box {
     display: grid;
     grid-template-columns: 1.3fr .7fr;
@@ -825,22 +824,12 @@ textarea {
     border: 1px solid #e2e8f0;
 }
 
-
-/*
-   IMPORTANT:
-   pricing-control is intentionally NOT given a width here.
-   Its natural width is controlled by the parent grid/container.
-*/
-
 .pricing-control {
     background: white;
     border-radius: 30px;
     padding: 35px;
     box-shadow: 0 20px 50px rgba(15, 23, 42, .06);
 }
-
-
-/* Header */
 
 .pricing-header {
     display: flex;
@@ -863,7 +852,9 @@ textarea {
 }
 
 
-/* Slider */
+/* =========================================================
+   PREMIUM SLIDER
+========================================================= */
 
 #volumeRange {
     width: 100%;
@@ -923,9 +914,6 @@ textarea {
     cursor: pointer;
 }
 
-
-/* Slider scale */
-
 .range-scale {
     display: flex;
     justify-content: space-between;
@@ -935,7 +923,9 @@ textarea {
 }
 
 
-/* Customer information */
+/* =========================================================
+   CUSTOMER LEVEL
+========================================================= */
 
 .customer-level {
     margin-top: 45px;
@@ -970,7 +960,9 @@ textarea {
 }
 
 
-/* Benefits */
+/* =========================================================
+   BENEFITS
+========================================================= */
 
 .pricing-benefits {
     background: #0f172a;
@@ -1015,7 +1007,9 @@ textarea {
 }
 
 
-/* Enterprise */
+/* =========================================================
+   ENTERPRISE
+========================================================= */
 
 .premium-pricing-box.enterprise-mode {
     border: 2px solid #00e0e6;
@@ -1038,6 +1032,25 @@ textarea {
 
 .pricing-benefits.enterprise-mode h3 {
     color: white;
+}
+
+
+/* =========================================================
+   ENTERPRISE BUTTON
+========================================================= */
+
+.enterprise-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 52px;
+    margin-top: 20px;
+    padding: 13px 18px;
+    box-sizing: border-box;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.7;
 }
 
 
@@ -1451,6 +1464,7 @@ textarea {
         max-width: 100%;
     }
 
+
     /* Hero */
 
     .hero {
@@ -1490,7 +1504,7 @@ textarea {
     }
 
     .hero-image img {
-    transform: scale(1.40);
+        transform: scale(1.40);
     }
 
     .hero-network {
@@ -1598,7 +1612,7 @@ textarea {
     }
 
 
-    /* Features / Trust / CTA */
+    /* Features */
 
     .features-section,
     .trust-section,
@@ -1628,39 +1642,19 @@ textarea {
     .featured-advantage {
         grid-column: auto;
     }
-}
 
 
-/* =========================================================
-   MOBILE — PREMIUM PRICING
-   THIS IS THE IMPORTANT PART
-========================================================= */
-
-@media (max-width: 900px) {
-
-    /*
-       DO NOT change .pricing-control width/padding here.
-
-       The control must remain its natural desktop-defined
-       dimensions relative to the container.
-
-       Only the OUTER premium box changes from grid to column.
-    */
+    /* =====================================================
+       PREMIUM PRICING — MOBILE
+    ===================================================== */
 
     .premium-pricing-box {
         display: flex;
         flex-direction: column;
-
-        grid-template-columns: none;
-
         gap: 22px;
 
         width: 100%;
 
-        /*
-           Keep the outer wrapper visually clean.
-           No forced width on pricing-control.
-        */
         padding: 0;
 
         background: transparent;
@@ -1673,53 +1667,30 @@ textarea {
     }
 
 
-    /*
-       IMPORTANT:
-       Do NOT set width:100% on .pricing-control.
-
-       Its width should remain the width supplied by the
-       parent/container, which is the ~350px width you saw
-       in Inspect.
-    */
+    /* Pricing control */
 
     .premium-pricing-box > .pricing-control {
         width: 100%;
         max-width: 350px;
-
-        /*
-           This preserves the actual card dimensions.
-           The card itself remains a separate white box.
-        */
         flex: 0 0 auto;
     }
 
 
-    /*
-       Benefits is a SECOND completely separate card.
-    */
+    /* Benefits */
 
     .premium-pricing-box > .pricing-benefits {
         width: 100%;
         max-width: 350px;
-
         margin: 0;
-
         flex: 0 0 auto;
-
-        box-sizing: border-box;
     }
 
 
-    /*
-       Header:
-       first line = حجم ارسال هفتگی شما
-       second line = ۱۰۰٬۰۰۰ پیامک
-    */
+    /* Pricing header */
 
     .premium-pricing-box .pricing-header {
         display: flex;
         flex-direction: column;
-
         align-items: center;
         justify-content: center;
 
@@ -1728,7 +1699,6 @@ textarea {
         gap: 8px;
 
         margin-bottom: 35px;
-
         padding-bottom: 25px;
 
         border-bottom: 1px solid #e2e8f0;
@@ -1736,15 +1706,12 @@ textarea {
 
     .premium-pricing-box .pricing-header span {
         display: block;
-
         width: 100%;
 
         color: #64748b;
 
         font-size: 16px;
-
         line-height: 1.8;
-
         font-weight: 600;
 
         text-align: center;
@@ -1752,36 +1719,30 @@ textarea {
 
     .premium-pricing-box .pricing-header strong {
         display: block;
-
         width: 100%;
 
         color: #0f172a;
 
         font-size: 32px;
-
         line-height: 1.5;
-
         font-weight: 900;
 
         text-align: center;
-
         white-space: normal;
     }
 
 
-    /*
-       Customer boxes:
-       On the phone they are stacked vertically.
-       This is intentional so the content doesn't become
-       cramped or narrow.
-    */
+    /* =====================================================
+       CUSTOMER LEVEL
+       Always two columns on mobile
+    ===================================================== */
 
     .premium-pricing-box .customer-level {
         display: grid;
 
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
 
-        gap: 20px;
+        gap: 12px;
 
         width: 100%;
 
@@ -1792,17 +1753,20 @@ textarea {
         width: 100%;
         min-width: 0;
 
+        box-sizing: border-box;
+
         text-align: center;
 
-        padding: 25px;
+        padding: 20px 12px;
     }
 
     .premium-pricing-box .customer-level span {
         display: block;
 
-        font-size: 14px;
+        margin-bottom: 10px;
 
-        line-height: 1.8;
+        font-size: 13px;
+        line-height: 1.7;
 
         text-align: center;
     }
@@ -1810,9 +1774,8 @@ textarea {
     .premium-pricing-box .customer-level strong {
         display: block;
 
-        font-size: 28px;
-
-        line-height: 1.7;
+        font-size: 20px;
+        line-height: 1.8;
 
         text-align: center;
 
@@ -1820,10 +1783,7 @@ textarea {
     }
 
 
-    /*
-       Benefits card.
-       Its colors are preserved exactly.
-    */
+    /* Benefits card */
 
     .premium-pricing-box .pricing-benefits {
         background: #0f172a;
@@ -1889,7 +1849,6 @@ textarea {
         display: flex;
 
         align-items: center;
-
         justify-content: center;
 
         width: 100%;
@@ -1910,6 +1869,7 @@ textarea {
 
         color: #0f172a;
     }
+
 }
 
 
@@ -1961,15 +1921,32 @@ textarea {
     }
 
     .hero-buttons {
+        width: 100%;
+        display: flex;
         flex-direction: column;
-        align-items: stretch;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
     }
 
-    .hero-buttons a,
-    .hero-buttons button {
+    .hero-buttons .primary-button,
+    .hero-buttons .secondary-button {
         width: 100%;
+        max-width: 352px;
+        min-height: 55px;
+
+        padding: 13px 18px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        box-sizing: border-box;
+
         text-align: center;
+        white-space: nowrap;
     }
+
 
     .data-network {
         height: 330px;
@@ -2099,7 +2076,7 @@ textarea {
     }
 
 
-    /* Premium pricing */
+    /* Premium Pricing */
 
     .premium-pricing-box {
         gap: 22px;
@@ -2142,6 +2119,7 @@ textarea {
         gap: 10px;
         line-height: 1.8;
     }
+
 }
 
 
@@ -2168,54 +2146,12 @@ textarea {
         font-size: 28px;
     }
 
-    .premium-pricing-box .customer-level strong {
-        font-size: 25px;
-    }
-}
-
-/* =========================================================
-   فقط: سطح همکاری + تعرفه هر پیامک
-   هیچ بخش دیگری تغییر نکند
-========================================================= */
-
-@media (max-width: 900px) {
-
     .premium-pricing-box .customer-level {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 12px !important;
-        width: 100% !important;
-        margin-top: 45px;
+        gap: 8px;
     }
 
     .premium-pricing-box .customer-level > div {
-        width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box;
-        text-align: center;
-    }
-
-    .premium-pricing-box .customer-level span {
-        display: block;
-        margin-bottom: 10px;
-        font-size: 13px;
-        line-height: 1.7;
-    }
-
-    .premium-pricing-box .customer-level strong {
-        display: block;
-        font-size: 20px;
-        line-height: 1.8;
-        white-space: normal;
-    }
-
-}
-
-@media (max-width: 430px) {
-
-    .premium-pricing-box .customer-level {
-        grid-template-columns: 1fr 1fr !important;
-        gap: 10px !important;
+        padding: 18px 8px;
     }
 
     .premium-pricing-box .customer-level span {
@@ -2229,34 +2165,807 @@ textarea {
 }
 
 /* =========================================================
-   HERO MOBILE BUTTONS
-   فقط: دریافت مشاوره رایگان + مشاهده امکانات
+   CONTACT MODAL
 ========================================================= */
 
-@media (max-width: 600px) {
+#contactModal {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    box-sizing: border-box;
+}
 
-    .hero-buttons {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
+#contactModal.is-open {
+    display: flex;
+}
+
+
+/* Overlay */
+
+.contact-modal-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+
+/* Modal Box */
+
+.contact-modal-content {
+    position: relative;
+    z-index: 2;
+    width: min(520px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+
+    background: #ffffff;
+    border-radius: 28px;
+    padding: 40px;
+
+    box-sizing: border-box;
+
+    box-shadow:
+        0 30px 80px rgba(15, 23, 42, 0.25);
+
+    direction: rtl;
+    text-align: right;
+
+    animation: contactModalIn .25s ease;
+}
+
+
+/* Modal Animation */
+
+@keyframes contactModalIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(.97);
     }
 
-    .hero-buttons .primary-button,
-    .hero-buttons .secondary-button {
-        width: 100%;
-        max-width: 352px;
-        min-height: 55px;
-        padding: 13px 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-        text-align: center;
-        white-space: nowrap;
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
 
 }
 
+
+/* Close Button */
+
+#contactModalClose {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+
+    width: 38px;
+    height: 38px;
+
+    border: 0;
+    border-radius: 50%;
+
+    background: #f1f5f9;
+    color: #475569;
+
+    font-size: 22px;
+    line-height: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+}
+
+#contactModalClose:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+
+/* Modal Brand */
+
+.contact-modal-content > span,
+.contact-modal-brand {
+    display: block;
+
+    color: var(--primary);
+    font-size: 14px;
+    font-weight: 700;
+
+    margin-bottom: 6px;
+}
+
+
+/* Modal Title */
+
+.contact-modal-content h2 {
+    color: var(--primary);
+    font-size: 30px;
+    font-weight: 900;
+
+    line-height: 1.6;
+
+    margin: 0 0 10px;
+}
+
+
+/* Modal Description */
+
+.contact-modal-content > p {
+    color: #64748b;
+    font-size: 15px;
+    line-height: 2;
+
+    margin: 0 0 25px;
+}
+
+
+/* Form */
+
+#contactForm {
+    width: 100%;
+}
+
+
+/* Labels */
+
+#contactForm label {
+    display: block;
+
+    color: #334155;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    margin-bottom: 8px;
+}
+
+
+/* Inputs / Textarea */
+
+#contactForm input,
+#contactForm textarea {
+    width: 100%;
+
+    padding: 13px 15px;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+
+    background: #ffffff;
+    color: #0f172a;
+
+    font-family: inherit;
+    font-size: 14px;
+
+    outline: none;
+
+    transition: .2s ease;
+
+    box-sizing: border-box;
+}
+
+#contactForm input {
+    height: 48px;
+}
+
+#contactForm textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.8;
+}
+
+
+/* Input Focus */
+
+#contactForm input:focus,
+#contactForm textarea:focus {
+    border-color: var(--accent);
+
+    box-shadow:
+        0 0 0 3px rgba(0, 224, 230, .12);
+}
+
+
+/* Form Groups */
+
+#contactForm .form-group,
+#contactForm > div {
+    margin-bottom: 18px;
+}
+
+
+/* Submit Button */
+
+#contactForm button[type="submit"] {
+    width: 100%;
+
+    min-height: 52px;
+
+    border: 0;
+    border-radius: 13px;
+
+    background: var(--primary);
+    color: #ffffff;
+
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: .25s ease;
+
+    box-sizing: border-box;
+}
+
+#contactForm button[type="submit"]:hover {
+    background: #243f66;
+}
+
+
+/* Success Message */
+
+#contactFormMessage {
+    display: none;
+
+    margin-top: 18px;
+    padding: 14px 16px;
+
+    border-radius: 12px;
+
+    background: #ecfeff;
+    color: #0e7490;
+
+    font-size: 14px;
+    line-height: 1.8;
+
+    text-align: center;
+}
+
+#contactFormMessage.is-visible {
+    display: block;
+}
+
+
+/* Prevent Background Scroll */
+
+body.modal-open {
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   CONTACT MODAL — MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    #contactModal {
+        padding: 15px;
+        align-items: center;
+    }
+
+    .contact-modal-content {
+        width: 100%;
+        max-width: 100%;
+
+        max-height: calc(100vh - 30px);
+
+        padding: 32px 22px 25px;
+
+        border-radius: 22px;
+    }
+
+    #contactModalClose {
+        top: 12px;
+        left: 12px;
+
+        width: 34px;
+        height: 34px;
+
+        font-size: 20px;
+    }
+
+    .contact-modal-content h2 {
+        font-size: 25px;
+        padding-left: 35px;
+    }
+
+    .contact-modal-content > p {
+        font-size: 14px;
+        line-height: 1.9;
+    }
+
+    #contactForm input {
+        height: 46px;
+    }
+
+    #contactForm textarea {
+        min-height: 110px;
+    }
+
+}
+
+/* =========================================================
+   CONTACT MODAL — FIX LAYER / CLICK
+========================================================= */
+
+#contactModal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+}
+
+/* پرده مات باید پشت فرم باشد */
+#contactModal .contact-modal-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: auto;
+}
+
+/* خود محتوای Popup باید بالای پرده باشد */
+#contactModal > *:not(.contact-modal-overlay) {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
+}
+
+/* اگر باکس اصلی همین کلاس است */
+#contactModal .contact-modal-content {
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+}
+
+/* تمام عناصر فرم قابل کلیک باشند */
+#contactModal form,
+#contactModal input,
+#contactModal textarea,
+#contactModal button,
+#contactModal select,
+#contactModal label {
+    position: relative;
+    z-index: 3;
+    pointer-events: auto;
+}
+
+/* =========================================================
+   PAYAMAKE CONTACT MODAL — FINAL VISUAL FIX
+========================================================= */
+
+/* کل مودال */
+#contactModal {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 20px !important;
+    box-sizing: border-box !important;
+
+    z-index: 99999 !important;
+}
+
+#contactModal.is-open {
+    display: flex !important;
+}
+
+
+/* =========================================================
+   BACKDROP
+========================================================= */
+
+#contactModal .contact-modal-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    background: rgba(15, 23, 42, 0.72) !important;
+
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    z-index: 1 !important;
+}
+
+
+/* =========================================================
+   MODAL CARD
+========================================================= */
+
+/*
+   هر چیزی که داخل مودال است ولی Overlay نیست،
+   به عنوان کارت اصلی در نظر گرفته می‌شود.
+*/
+
+#contactModal > *:not(.contact-modal-overlay) {
+    position: relative !important;
+
+    z-index: 10 !important;
+
+    width: min(520px, 100%) !important;
+    max-width: 520px !important;
+
+    max-height: calc(100vh - 40px) !important;
+
+    overflow-y: auto !important;
+
+    background: #ffffff !important;
+
+    border: 1px solid #e2e8f0 !important;
+
+    border-radius: 28px !important;
+
+    padding: 40px !important;
+
+    box-sizing: border-box !important;
+
+    box-shadow:
+        0 30px 80px rgba(15, 23, 42, .28) !important;
+
+    color: #111827 !important;
+
+    direction: rtl !important;
+    text-align: right !important;
+
+    pointer-events: auto !important;
+}
+
+
+/* اگر کلاس content وجود دارد */
+#contactModal .contact-modal-content {
+    position: relative !important;
+    z-index: 10 !important;
+
+    background: #ffffff !important;
+
+    border: 1px solid #e2e8f0 !important;
+
+    border-radius: 28px !important;
+
+    color: #111827 !important;
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+========================================================= */
+
+#contactModalClose {
+    position: absolute !important;
+
+    top: 16px !important;
+    left: 16px !important;
+
+    z-index: 20 !important;
+
+    width: 38px !important;
+    height: 38px !important;
+
+    padding: 0 !important;
+
+    border: 1px solid #e2e8f0 !important;
+
+    border-radius: 50% !important;
+
+    background: #f8fafc !important;
+
+    color: #475569 !important;
+
+    font-family: Arial, sans-serif !important;
+
+    font-size: 20px !important;
+    line-height: 38px !important;
+
+    text-align: center !important;
+
+    cursor: pointer !important;
+
+    pointer-events: auto !important;
+}
+
+#contactModalClose:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+
+/* =========================================================
+   MODAL TEXT
+========================================================= */
+
+#contactModal h2 {
+    margin: 0 0 12px !important;
+
+    color: #1A2F50 !important;
+
+    font-size: 30px !important;
+    font-weight: 900 !important;
+
+    line-height: 1.6 !important;
+}
+
+#contactModal p {
+    margin: 0 0 25px !important;
+
+    color: #64748b !important;
+
+    font-size: 15px !important;
+
+    line-height: 2 !important;
+}
+
+
+/* PAYAMAKE label */
+#contactModal .contact-modal-content > span,
+#contactModal > div:not(.contact-modal-overlay) > span {
+    display: block !important;
+
+    margin-bottom: 5px !important;
+
+    color: #1A2F50 !important;
+
+    font-size: 14px !important;
+    font-weight: 700 !important;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+#contactModal form {
+    display: block !important;
+
+    width: 100% !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    background: transparent !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* =========================================================
+   FORM LABELS
+========================================================= */
+
+#contactModal form label {
+    display: block !important;
+
+    width: 100% !important;
+
+    margin: 0 0 8px !important;
+
+    color: #334155 !important;
+
+    font-size: 14px !important;
+    font-weight: 700 !important;
+
+    line-height: 1.8 !important;
+}
+
+
+/* =========================================================
+   INPUTS
+========================================================= */
+
+#contactModal form input,
+#contactModal form textarea,
+#contactModal form select {
+    display: block !important;
+
+    width: 100% !important;
+
+    max-width: 100% !important;
+
+    min-width: 0 !important;
+
+    margin: 0 0 18px !important;
+
+    padding: 13px 15px !important;
+
+    box-sizing: border-box !important;
+
+    background: #ffffff !important;
+
+    background-color: #ffffff !important;
+
+    color: #111827 !important;
+
+    border: 1px solid #cbd5e1 !important;
+
+    border-radius: 12px !important;
+
+    outline: none !important;
+
+    font-family: "Vazirmatn", Arial, sans-serif !important;
+
+    font-size: 14px !important;
+
+    line-height: 1.8 !important;
+
+    opacity: 1 !important;
+
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+
+/* Input height */
+
+#contactModal form input,
+#contactModal form select {
+    height: 50px !important;
+}
+
+
+/* Textarea */
+
+#contactModal form textarea {
+    min-height: 120px !important;
+
+    height: 120px !important;
+
+    resize: vertical !important;
+}
+
+
+/* Focus */
+
+#contactModal form input:focus,
+#contactModal form textarea:focus,
+#contactModal form select:focus {
+    background: #ffffff !important;
+
+    border-color: #00e0e6 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(0, 224, 230, .12) !important;
+}
+
+
+/* Placeholder */
+
+#contactModal form input::placeholder,
+#contactModal form textarea::placeholder {
+    color: #94a3b8 !important;
+
+    opacity: 1 !important;
+}
+
+
+/* =========================================================
+   SUBMIT BUTTON
+========================================================= */
+
+#contactModal form button[type="submit"] {
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 100% !important;
+
+    min-height: 54px !important;
+
+    margin: 5px 0 0 !important;
+
+    padding: 13px 20px !important;
+
+    box-sizing: border-box !important;
+
+    border: 0 !important;
+
+    border-radius: 13px !important;
+
+    background: #1A2F50 !important;
+
+    color: #ffffff !important;
+
+    font-family: "Vazirmatn", Arial, sans-serif !important;
+
+    font-size: 15px !important;
+
+    font-weight: 700 !important;
+
+    cursor: pointer !important;
+
+    pointer-events: auto !important;
+
+    transition: .2s ease !important;
+}
+
+#contactModal form button[type="submit"]:hover {
+    background: #243f66 !important;
+}
+
+
+/* =========================================================
+   SUCCESS MESSAGE
+========================================================= */
+
+#contactFormMessage {
+    display: none !important;
+
+    width: 100% !important;
+
+    margin-top: 18px !important;
+
+    padding: 13px 15px !important;
+
+    box-sizing: border-box !important;
+
+    border-radius: 12px !important;
+
+    background: #ecfeff !important;
+
+    color: #0e7490 !important;
+
+    font-size: 14px !important;
+
+    line-height: 1.8 !important;
+
+    text-align: center !important;
+}
+
+#contactFormMessage.is-visible {
+    display: block !important;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    #contactModal {
+        padding: 15px !important;
+    }
+
+    #contactModal > *:not(.contact-modal-overlay) {
+        width: 100% !important;
+        max-width: 420px !important;
+
+        max-height: calc(100vh - 30px) !important;
+
+        padding: 32px 22px 25px !important;
+
+        border-radius: 22px !important;
+    }
+
+    #contactModal h2 {
+        font-size: 25px !important;
+
+        padding-left: 35px !important;
+    }
+
+    #contactModal p {
+        font-size: 14px !important;
+    }
+
+}
