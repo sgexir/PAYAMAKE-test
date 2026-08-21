@@ -121,6 +121,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (customNeedField) customNeedField.hidden = true;
             if (messageTextarea) messageTextarea.value = "";
 
+            document.querySelectorAll(".contact-field-limit-message").forEach(function (message) {
+                message.classList.remove("is-visible");
+            });
+
             if (contactFormMessage) {
                 contactFormMessage.innerText = "";
                 contactFormMessage.classList.remove("is-visible");
@@ -140,7 +144,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const brandGroup = document.createElement("div");
             brandGroup.className = "contact-form-group";
             brandGroup.innerHTML = `
-                <label for="contactBrand">
+                <label for="contactBrand" title="حداکثر ۲۵ کاراکتر">
                     نام برند / کسب‌وکار
                     <span>(اختیاری)</span>
                 </label>
@@ -150,6 +154,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     name="brand"
                     placeholder="نام برند یا کسب‌وکار"
                     autocomplete="organization"
+                    maxlength="25"
+                    title="حداکثر ۲۵ کاراکتر"
                 >
             `;
 
@@ -179,10 +185,13 @@ document.addEventListener("DOMContentLoaded", function () {
             if (messageLabel) {
                 messageLabel.textContent = "نیاز خود را توضیح دهید (اختیاری)";
                 messageLabel.setAttribute("for", "contactMessage");
+                messageLabel.title = "حداکثر ۲۵ کاراکتر";
             }
 
             if (messageTextarea) {
                 messageTextarea.placeholder = "نیاز خود را توضیح دهید...";
+                messageTextarea.maxLength = 25;
+                messageTextarea.title = "حداکثر ۲۵ کاراکتر";
             }
 
             // Hide the single existing textarea until "سایر" is selected.
@@ -190,6 +199,84 @@ document.addEventListener("DOMContentLoaded", function () {
 
             contactForm.insertBefore(brandGroup, messageGroup);
             contactForm.insertBefore(typeGroup, messageGroup);
+
+            /*
+             * SMS.ir Pattern parameters have a 25-character limit. The Worker
+             * also protects the API from oversized values, but we stop the user
+             * at the source so a valid-looking form can never fail later because
+             * of a Pattern parameter that is too long.
+             *
+             * UX behavior:
+             * - maxlength prevents the 26th character from being entered/pasted.
+             * - a small red inline warning appears when the user reaches the limit
+             *   and tries to add more text.
+             * - the warning disappears automatically once the value is shortened.
+             * - the fields remain optional.
+             * - the full value is still preserved in D1 by the backend if received.
+             */
+            function setupPatternLimit(field, group) {
+                if (!field || !group) return;
+
+                const limitMessage = document.createElement("div");
+                limitMessage.className = "contact-field-limit-message";
+                limitMessage.textContent = "حداکثر ۲۵ کاراکتر مجاز است.";
+                limitMessage.setAttribute("role", "status");
+                limitMessage.style.cssText = [
+                    "display:none",
+                    "margin-top:4px",
+                    "font-size:11px",
+                    "line-height:1.5",
+                    "color:#dc2626"
+                ].join(";");
+
+                group.appendChild(limitMessage);
+
+                function showLimitMessage() {
+                    limitMessage.style.display = "block";
+                    limitMessage.classList.add("is-visible");
+                }
+
+                function hideLimitMessage() {
+                    limitMessage.style.display = "none";
+                    limitMessage.classList.remove("is-visible");
+                }
+
+                field.addEventListener("input", function () {
+                    if (field.value.length < 25) {
+                        hideLimitMessage();
+                    }
+                });
+
+                field.addEventListener("keydown", function (event) {
+                    if (field.value.length < 25) return;
+
+                    const allowedKeys = [
+                        "Backspace", "Delete", "ArrowLeft", "ArrowRight",
+                        "ArrowUp", "ArrowDown", "Home", "End", "Tab"
+                    ];
+
+                    if (!allowedKeys.includes(event.key) && !event.ctrlKey && !event.metaKey) {
+                        showLimitMessage();
+                    }
+                });
+
+                field.addEventListener("paste", function (event) {
+                    const pastedText = event.clipboardData
+                        ? event.clipboardData.getData("text")
+                        : "";
+
+                    if (field.value.length + pastedText.length > 25) {
+                        showLimitMessage();
+                    }
+                });
+            }
+
+            setupPatternLimit(
+                document.getElementById("contactBrand"),
+                brandGroup
+            );
+
+            setupPatternLimit(messageTextarea, messageGroup);
 
             const contactType = document.getElementById("contactType");
 
@@ -201,6 +288,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     if (!isOther && messageTextarea) {
                         messageTextarea.value = "";
+                    }
+
+                    if (!isOther) {
+                        const limitMessage = messageGroup.querySelector(".contact-field-limit-message");
+                        if (limitMessage) {
+                            limitMessage.style.display = "none";
+                            limitMessage.classList.remove("is-visible");
+                        }
                     }
                 });
             }
