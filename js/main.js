@@ -122,6 +122,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (messageTextarea) messageTextarea.value = "";
 
             document.querySelectorAll(".contact-field-limit-message").forEach(function (message) {
+                message.style.display = "none";
                 message.classList.remove("is-visible");
             });
 
@@ -179,6 +180,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // Reuse the existing description textarea as the ONLY custom-need field.
             // It stays optional and is hidden until "سایر" is selected.
             messageGroup.id = "contactCustomNeedGroup";
+
             const messageLabel = messageGroup.querySelector("label");
             const messageTextarea = messageGroup.querySelector("textarea");
 
@@ -201,21 +203,43 @@ document.addEventListener("DOMContentLoaded", function () {
             contactForm.insertBefore(typeGroup, messageGroup);
 
             /*
-             * SMS.ir Pattern parameters have a 25-character limit. The Worker
-             * also protects the API from oversized values, but we stop the user
-             * at the source so a valid-looking form can never fail later because
-             * of a Pattern parameter that is too long.
+             * =====================================================
+             * SMS.ir PATTERN CHARACTER LIMIT
+             * =====================================================
              *
-             * UX behavior:
-             * - maxlength prevents the 26th character from being entered/pasted.
-             * - a small red inline warning appears when the user reaches the limit
-             *   and tries to add more text.
-             * - the warning disappears automatically once the value is shortened.
-             * - the fields remain optional.
-             * - the full value is still preserved in D1 by the backend if received.
+             * SMS.ir Pattern parameters currently accept a maximum of
+             * 25 characters. The backend also protects the API from
+             * oversized values, but frontend validation is added as a
+             * second layer so the user cannot unknowingly submit data
+             * that would later cause the SMS request to fail.
+             *
+             * This helper is intentionally reusable for every field
+             * that is eventually sent as a Pattern parameter.
+             *
+             * Current behavior:
+             *
+             * 1. maxlength="25" prevents entering more than 25 characters.
+             * 2. Keyboard input after the limit is blocked.
+             * 3. Paste operations that exceed the limit are blocked by
+             *    the browser maxlength behavior and a warning is shown.
+             * 4. A small red warning appears when the user attempts to
+             *    enter/paste more than 25 characters.
+             * 5. The warning disappears automatically once the value
+             *    becomes shorter than 25 characters.
+             * 6. The field itself remains optional unless separately
+             *    marked as required.
+             *
+             * IMPORTANT:
+             * This is a UX/security defense-in-depth measure only.
+             * The Cloudflare Worker must continue validating/limiting
+             * values server-side because frontend validation can never
+             * be considered a security boundary.
              */
             function setupPatternLimit(field, group) {
                 if (!field || !group) return;
+
+                field.maxLength = 25;
+                field.title = "حداکثر ۲۵ کاراکتر";
 
                 const limitMessage = document.createElement("div");
                 limitMessage.className = "contact-field-limit-message";
@@ -251,11 +275,22 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (field.value.length < 25) return;
 
                     const allowedKeys = [
-                        "Backspace", "Delete", "ArrowLeft", "ArrowRight",
-                        "ArrowUp", "ArrowDown", "Home", "End", "Tab"
+                        "Backspace",
+                        "Delete",
+                        "ArrowLeft",
+                        "ArrowRight",
+                        "ArrowUp",
+                        "ArrowDown",
+                        "Home",
+                        "End",
+                        "Tab"
                     ];
 
-                    if (!allowedKeys.includes(event.key) && !event.ctrlKey && !event.metaKey) {
+                    if (
+                        !allowedKeys.includes(event.key) &&
+                        !event.ctrlKey &&
+                        !event.metaKey
+                    ) {
                         showLimitMessage();
                     }
                 });
@@ -271,12 +306,48 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             }
 
+            /*
+             * =====================================================
+             * CONTACT FORM FIELD LIMITS
+             * =====================================================
+             *
+             * Name and surname are required fields, but they also need
+             * to respect the same 25-character SMS.ir Pattern limit.
+             *
+             * The form therefore enforces:
+             *
+             * - Full name: required + maximum 25 characters
+             * - Brand: optional + maximum 25 characters
+             * - Custom need description: optional + maximum 25 characters
+             *
+             * The "Need" select itself does not require a text limit
+             * because its available options are predefined.
+             */
+
+            const fullNameField =
+                contactForm.elements.namedItem("fullName") ||
+                document.getElementById("fullName");
+
+            const fullNameGroup = fullNameField
+                ? fullNameField.closest(".contact-form-group")
+                : null;
+
+            if (fullNameField && fullNameGroup) {
+                fullNameField.maxLength = 25;
+                fullNameField.title = "حداکثر ۲۵ کاراکتر";
+
+                setupPatternLimit(fullNameField, fullNameGroup);
+            }
+
             setupPatternLimit(
                 document.getElementById("contactBrand"),
                 brandGroup
             );
 
-            setupPatternLimit(messageTextarea, messageGroup);
+            setupPatternLimit(
+                messageTextarea,
+                messageGroup
+            );
 
             const contactType = document.getElementById("contactType");
 
@@ -291,7 +362,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
 
                     if (!isOther) {
-                        const limitMessage = messageGroup.querySelector(".contact-field-limit-message");
+                        const limitMessage = messageGroup.querySelector(
+                            ".contact-field-limit-message"
+                        );
+
                         if (limitMessage) {
                             limitMessage.style.display = "none";
                             limitMessage.classList.remove("is-visible");
@@ -310,7 +384,10 @@ document.addEventListener("DOMContentLoaded", function () {
             contactModal.setAttribute("aria-hidden", "false");
             document.body.classList.add("modal-open");
 
-            const firstInput = contactModal.querySelector("input, select, textarea");
+            const firstInput = contactModal.querySelector(
+                "input, select, textarea"
+            );
+
             if (firstInput) {
                 setTimeout(function () {
                     firstInput.focus();
@@ -382,32 +459,115 @@ document.addEventListener("DOMContentLoaded", function () {
                 function readField(names) {
                     for (const name of names) {
                         const byName = contactForm.elements.namedItem(name);
-                        if (byName) return String(byName.value || "").trim();
+
+                        if (byName) {
+                            return String(byName.value || "").trim();
+                        }
 
                         const byId = document.getElementById(name);
+
                         if (byId && contactForm.contains(byId)) {
                             return String(byId.value || "").trim();
                         }
                     }
+
                     return "";
                 }
 
-                const fullName = readField(["fullName", "fullname", "full_name", "name"]);
-                const phone = readField(["phone", "mobile", "mobileNumber", "phoneNumber", "tel"]);
-                const brand = readField(["brand", "company", "companyName", "business"]);
-                const type = readField(["type", "requestType", "request_type", "need", "subject"]);
-                const description = readField(["description", "message", "details", "text"]);
+                const fullName = readField([
+                    "fullName",
+                    "fullname",
+                    "full_name",
+                    "name"
+                ]);
+
+                const phone = readField([
+                    "phone",
+                    "mobile",
+                    "mobileNumber",
+                    "phoneNumber",
+                    "tel"
+                ]);
+
+                const brand = readField([
+                    "brand",
+                    "company",
+                    "companyName",
+                    "business"
+                ]);
+
+                const type = readField([
+                    "type",
+                    "requestType",
+                    "request_type",
+                    "need",
+                    "subject"
+                ]);
+
+                const description = readField([
+                    "description",
+                    "message",
+                    "details",
+                    "text"
+                ]);
 
                 if (!fullName || !phone) {
                     if (contactFormMessage) {
-                        contactFormMessage.innerText = "لطفاً نام و شماره موبایل خود را وارد کنید.";
+                        contactFormMessage.innerText =
+                            "لطفاً نام و شماره موبایل خود را وارد کنید.";
+
                         contactFormMessage.classList.add("is-visible");
                     }
+
+                    return;
+                }
+
+                /*
+                 * Final client-side safety check:
+                 * Even though maxlength prevents normal input beyond
+                 * 25 characters, we verify the actual values immediately
+                 * before sending them to the Worker.
+                 *
+                 * This protects against values injected or modified by
+                 * scripts/browser tools and keeps the frontend contract
+                 * aligned with SMS.ir Pattern limits.
+                 */
+                if (fullName.length > 25) {
+                    if (contactFormMessage) {
+                        contactFormMessage.innerText =
+                            "نام و نام خانوادگی نمی‌تواند بیشتر از ۲۵ کاراکتر باشد.";
+
+                        contactFormMessage.classList.add("is-visible");
+                    }
+
+                    return;
+                }
+
+                if (brand.length > 25) {
+                    if (contactFormMessage) {
+                        contactFormMessage.innerText =
+                            "نام برند نمی‌تواند بیشتر از ۲۵ کاراکتر باشد.";
+
+                        contactFormMessage.classList.add("is-visible");
+                    }
+
+                    return;
+                }
+
+                if (description.length > 25) {
+                    if (contactFormMessage) {
+                        contactFormMessage.innerText =
+                            "توضیحات نیاز نمی‌تواند بیشتر از ۲۵ کاراکتر باشد.";
+
+                        contactFormMessage.classList.add("is-visible");
+                    }
+
                     return;
                 }
 
                 if (submitButton) {
                     submitButton.disabled = true;
+
                     if ("value" in submitButton) {
                         submitButton.value = "در حال ارسال...";
                     } else {
@@ -416,7 +576,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 if (contactFormMessage) {
-                    contactFormMessage.innerText = "در حال ثبت درخواست...";
+                    contactFormMessage.innerText =
+                        "در حال ثبت درخواست...";
+
                     contactFormMessage.classList.add("is-visible");
                 }
 
@@ -425,7 +587,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         "https://payamake-contact.sgexir.workers.dev/",
                         {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" },
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
                             body: JSON.stringify({
                                 fullName,
                                 phone,
@@ -438,34 +602,48 @@ document.addEventListener("DOMContentLoaded", function () {
                     );
 
                     let result;
+
                     try {
                         result = await response.json();
                     } catch {
-                        result = { success: false, error: "پاسخ نامعتبر از سرور دریافت شد." };
+                        result = {
+                            success: false,
+                            error: "پاسخ نامعتبر از سرور دریافت شد."
+                        };
                     }
 
                     if (!response.ok || !result.success) {
-                        throw new Error(result.error || "ثبت درخواست انجام نشد. لطفاً دوباره تلاش کنید.");
+                        throw new Error(
+                            result.error ||
+                            "ثبت درخواست انجام نشد. لطفاً دوباره تلاش کنید."
+                        );
                     }
 
                     if (contactFormMessage) {
-                        contactFormMessage.innerText = "درخواست شما با موفقیت دریافت شد. به‌زودی با شما تماس می‌گیریم.";
+                        contactFormMessage.innerText =
+                            "درخواست شما با موفقیت دریافت شد. به‌زودی با شما تماس می‌گیریم.";
+
                         contactFormMessage.classList.add("is-visible");
                     }
 
                     contactForm.reset();
+
                 } catch (error) {
                     console.error("Contact form error:", error);
 
                     if (contactFormMessage) {
-                        contactFormMessage.innerText = error instanceof Error
-                            ? error.message
-                            : "ارسال درخواست انجام نشد. لطفاً دوباره تلاش کنید.";
+                        contactFormMessage.innerText =
+                            error instanceof Error
+                                ? error.message
+                                : "ارسال درخواست انجام نشد. لطفاً دوباره تلاش کنید.";
+
                         contactFormMessage.classList.add("is-visible");
                     }
+
                 } finally {
                     if (submitButton) {
                         submitButton.disabled = false;
+
                         if ("value" in submitButton) {
                             submitButton.value = originalButtonText;
                         } else {
