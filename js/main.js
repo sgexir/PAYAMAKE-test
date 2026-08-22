@@ -202,39 +202,6 @@ document.addEventListener("DOMContentLoaded", function () {
             contactForm.insertBefore(brandGroup, messageGroup);
             contactForm.insertBefore(typeGroup, messageGroup);
 
-            /*
-             * =====================================================
-             * SMS.ir PATTERN CHARACTER LIMIT
-             * =====================================================
-             *
-             * SMS.ir Pattern parameters currently accept a maximum of
-             * 25 characters. The backend also protects the API from
-             * oversized values, but frontend validation is added as a
-             * second layer so the user cannot unknowingly submit data
-             * that would later cause the SMS request to fail.
-             *
-             * This helper is intentionally reusable for every field
-             * that is eventually sent as a Pattern parameter.
-             *
-             * Current behavior:
-             *
-             * 1. maxlength="25" prevents entering more than 25 characters.
-             * 2. Keyboard input after the limit is blocked.
-             * 3. Paste operations that exceed the limit are blocked by
-             *    the browser maxlength behavior and a warning is shown.
-             * 4. A small red warning appears when the user attempts to
-             *    enter/paste more than 25 characters.
-             * 5. The warning disappears automatically once the value
-             *    becomes shorter than 25 characters.
-             * 6. The field itself remains optional unless separately
-             *    marked as required.
-             *
-             * IMPORTANT:
-             * This is a UX/security defense-in-depth measure only.
-             * The Cloudflare Worker must continue validating/limiting
-             * values server-side because frontend validation can never
-             * be considered a security boundary.
-             */
             function setupPatternLimit(field, group) {
                 if (!field || !group) return;
 
@@ -307,26 +274,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 });
             }
-
-            /*
-             * =====================================================
-             * CONTACT FORM FIELD LIMITS
-             * =====================================================
-             *
-             * The actual HTML form uses name="name" and id="contactName"
-             * for the full-name field. The previous implementation looked
-             * only for fullName/fullname/full_name, so it never attached
-             * maxlength or the warning handler to the real name input.
-             *
-             * The selector below deliberately supports both the current
-             * HTML field and the older naming variants so this protection
-             * cannot silently disappear if the field naming changes later.
-             *
-             * Limits:
-             * - Full name: required + maximum 25 characters
-             * - Brand: optional + maximum 25 characters
-             * - Custom need description: optional + maximum 25 characters
-             */
 
             const fullNameField =
                 contactForm.elements.namedItem("name") ||
@@ -448,7 +395,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         /* =====================================================
            CONTACT FORM → CLOUDFLARE WORKER
-        ===================================================== */
+        ========================================================= */
 
         if (contactForm) {
             contactForm.addEventListener("submit", async function (event) {
@@ -531,16 +478,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
-                /*
-                 * Final client-side safety check:
-                 * Even though maxlength prevents normal input beyond
-                 * 25 characters, we verify the actual values immediately
-                 * before sending them to the Worker.
-                 *
-                 * This protects against values injected or modified by
-                 * scripts/browser tools and keeps the frontend contract
-                 * aligned with SMS.ir Pattern limits.
-                 */
                 if (fullName.length > 25) {
                     if (contactFormMessage) {
                         contactFormMessage.innerText =
@@ -662,5 +599,47 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             });
         }
+    }
+
+    /* =========================================================
+       STAGE 1 — SHARED BASE FOOTER
+       Keep the footer content identical on all five site pages.
+       Stage 1 intentionally does not add phone, legal links, or new
+       destinations; link work is reserved for Stage 2.
+    ========================================================= */
+
+    const footer = document.querySelector(".footer");
+
+    if (footer) {
+        footer.innerHTML = `
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-brand">
+                        <h3>PAYAMAKE</h3>
+                        <p>پیامی که می‌فرستید، نتیجه‌ای که می‌سازید.</p>
+                    </div>
+                    <div class="footer-links">
+                        <h4>خدمات</h4>
+                        <ul>
+                            <li>پنل پیامکی</li>
+                            <li>بانک شماره تخصصی</li>
+                            <li>اجرای کمپین</li>
+                            <li>API پیامکی</li>
+                            <li>تعرفه سازمانی</li>
+                        </ul>
+                    </div>
+                    <div class="footer-links">
+                        <h4>ارتباط با ما</h4>
+                        <ul>
+                            <li>پنل پیامکی</li>
+                            <li>مشاوره رایگان</li>
+                            <li>پشتیبانی</li>
+                            <li>مقالات</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">© PAYAMAKE - تمامی حقوق محفوظ است.</div>
+            </div>
+        `;
     }
 });
