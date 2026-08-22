@@ -414,7 +414,8 @@ document.addEventListener("DOMContentLoaded", function () {
             const isContactButton =
                 buttonText.includes("مشاوره") ||
                 buttonText.includes("شروع همکاری") ||
-                buttonText.includes("درخواست مشاوره");
+                buttonText.includes("درخواست مشاوره") ||
+                buttonText.includes("تعرفه");
 
             if (!isContactButton) return;
 
