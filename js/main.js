@@ -625,7 +625,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="footer-links">
                         <h4>خدمات</h4>
                         <ul>
-                            <li><a href="${homePrefix}#pricing">پنل پیامکی</a></li>
+                            <li><a href="${homePrefix}#advantages">پنل پیامکی</a></li>
                             <li><a href="${homePrefix}#database">بانک شماره تخصصی</a></li>
                             <li><a href="${homePrefix}#solutions">اجرای کمپین</a></li>
                             <li><a href="${homePrefix}#features">API پیامکی</a></li>
