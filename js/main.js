@@ -1,15 +1,8 @@
 // PAYAMAKE Main JavaScript
 
 document.addEventListener("DOMContentLoaded", function () {
-
-    // index.html currently includes main.js twice. Guard the initializer so
-    // the contact form can never register duplicate handlers.
     if (window.__PAYAMAKE_MAIN_INITIALIZED__) return;
     window.__PAYAMAKE_MAIN_INITIALIZED__ = true;
-
-    /* =========================================================
-       PRICING CALCULATOR
-    ========================================================= */
 
     const volumeRange = document.getElementById("volumeRange");
     const volumeValue = document.getElementById("volumeValue");
@@ -19,19 +12,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const pricingButton = document.querySelector(".pricing-benefits .primary-button");
     const pricingControl = document.querySelector(".pricing-control");
     const originalButtonParent = pricingButton ? pricingButton.parentElement : null;
-
-    if (
-        volumeRange && volumeValue && customerLevel && priceValue &&
-        pricingBox && pricingButton && pricingControl && originalButtonParent
-    ) {
+    if (volumeRange && volumeValue && customerLevel && priceValue && pricingBox && pricingButton && pricingControl && originalButtonParent) {
         const benefitsBox = pricingBox.querySelector(".pricing-benefits");
         const mobileMediaQuery = window.matchMedia("(max-width: 768px)");
-
         function updatePricing() {
             const volume = Number(volumeRange.value);
             volumeValue.innerText = volume.toLocaleString("fa-IR") + " پیامک";
-            const min = Number(volumeRange.min);
-            const max = Number(volumeRange.max);
+            const min = Number(volumeRange.min), max = Number(volumeRange.max);
             const percentage = ((volume - min) / (max - min)) * 100;
             volumeRange.style.background = `linear-gradient(to left,#00e0e6 0%,#00e0e6 ${percentage}%,#e2e8f0 ${percentage}%,#e2e8f0 100%)`;
             if (volume <= 100000) { customerLevel.innerText = "مشتری عادی"; priceValue.innerText = "270 تومان"; }
@@ -59,15 +46,11 @@ document.addEventListener("DOMContentLoaded", function () {
         updatePricing();
     }
 
-    /* =========================================================
-       CONTACT MODAL
-    ========================================================= */
     const contactModal = document.getElementById("contactModal");
     const contactModalClose = document.getElementById("contactModalClose");
     const contactModalOverlay = contactModal ? contactModal.querySelector(".contact-modal-overlay") : null;
     const contactForm = document.getElementById("contactForm");
     const contactFormMessage = document.getElementById("contactFormMessage");
-
     if (contactModal) {
         function resetContactFormState() {
             if (contactForm) contactForm.reset();
@@ -80,7 +63,6 @@ document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll(".contact-field-limit-message").forEach(function (message) { message.style.display = "none"; message.classList.remove("is-visible"); });
             if (contactFormMessage) { contactFormMessage.innerText = ""; contactFormMessage.classList.remove("is-visible"); }
         }
-
         function addOptionalContactFields() {
             if (!contactForm || document.getElementById("contactBrand")) return;
             const messageField = document.getElementById("contactMessage");
@@ -93,8 +75,7 @@ document.addEventListener("DOMContentLoaded", function () {
             typeGroup.className = "contact-form-group";
             typeGroup.innerHTML = `<label for="contactType">نیاز شما <span>(اختیاری)</span></label><select id="contactType" name="type"><option value="" selected disabled>انتخاب کنید</option><option value="مشاوره پیامکی">مشاوره پیامکی</option><option value="بانک شماره">بانک شماره</option><option value="تعرفه و قیمت">تعرفه و قیمت</option><option value="اجرای کمپین">اجرای کمپین</option><option value="سایر">سایر</option></select>`;
             messageGroup.id = "contactCustomNeedGroup";
-            const messageLabel = messageGroup.querySelector("label");
-            const messageTextarea = messageGroup.querySelector("textarea");
+            const messageLabel = messageGroup.querySelector("label"), messageTextarea = messageGroup.querySelector("textarea");
             if (messageLabel) { messageLabel.textContent = "نیاز خود را توضیح دهید (اختیاری)"; messageLabel.setAttribute("for", "contactMessage"); messageLabel.title = "حداکثر ۲۵ کاراکتر"; }
             if (messageTextarea) { messageTextarea.placeholder = "نیاز خود را توضیح دهید..."; messageTextarea.maxLength = 25; messageTextarea.title = "حداکثر ۲۵ کاراکتر"; }
             messageGroup.hidden = true;
@@ -136,20 +117,10 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
         addOptionalContactFields();
-        function openContactModal() {
-            resetContactFormState();
-            contactModal.classList.add("is-open"); contactModal.setAttribute("aria-hidden", "false"); document.body.classList.add("modal-open");
-            const firstInput = contactModal.querySelector("input, select, textarea");
-            if (firstInput) setTimeout(function () { firstInput.focus(); }, 100);
-        }
+        function openContactModal() { resetContactFormState(); contactModal.classList.add("is-open"); contactModal.setAttribute("aria-hidden", "false"); document.body.classList.add("modal-open"); const firstInput = contactModal.querySelector("input, select, textarea"); if (firstInput) setTimeout(function () { firstInput.focus(); }, 100); }
         function closeContactModal() { contactModal.classList.remove("is-open"); contactModal.setAttribute("aria-hidden", "true"); document.body.classList.remove("modal-open"); }
         const contactButtons = document.querySelectorAll('a[href="#"]');
-        contactButtons.forEach(function (button) {
-            const buttonText = button.innerText.trim();
-            const isContactButton = buttonText.includes("مشاوره") || buttonText.includes("شروع همکاری") || buttonText.includes("درخواست مشاوره") || buttonText.includes("تعرفه");
-            if (!isContactButton) return;
-            button.addEventListener("click", function (event) { event.preventDefault(); openContactModal(); });
-        });
+        contactButtons.forEach(function (button) { const buttonText = button.innerText.trim(); const isContactButton = buttonText.includes("مشاوره") || buttonText.includes("شروع همکاری") || buttonText.includes("درخواست مشاوره") || buttonText.includes("تعرفه"); if (!isContactButton) return; button.addEventListener("click", function (event) { event.preventDefault(); openContactModal(); }); });
         if (contactModalClose) contactModalClose.addEventListener("click", function () { closeContactModal(); });
         if (contactModalOverlay) contactModalOverlay.addEventListener("click", function () { closeContactModal(); });
         document.addEventListener("keydown", function (event) { if (event.key === "Escape" && contactModal.classList.contains("is-open")) closeContactModal(); });
@@ -159,11 +130,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const submitButton = contactForm.querySelector('button[type="submit"], input[type="submit"]');
                 const originalButtonText = submitButton ? (submitButton.innerText || submitButton.value) : "";
                 function readField(names) { for (const name of names) { const byName = contactForm.elements.namedItem(name); if (byName) return String(byName.value || "").trim(); const byId = document.getElementById(name); if (byId && contactForm.contains(byId)) return String(byId.value || "").trim(); } return ""; }
-                const fullName = readField(["fullName","fullname","full_name","name","contactName"]);
-                const phone = readField(["phone","mobile","mobileNumber","phoneNumber","tel","contactPhone"]);
-                const brand = readField(["brand","company","companyName","business"]);
-                const type = readField(["type","requestType","request_type","need","subject"]);
-                const description = readField(["description","message","details","text","contactMessage"]);
+                const fullName = readField(["fullName","fullname","full_name","name","contactName"]), phone = readField(["phone","mobile","mobileNumber","phoneNumber","tel","contactPhone"]), brand = readField(["brand","company","companyName","business"]), type = readField(["type","requestType","request_type","need","subject"]), description = readField(["description","message","details","text","contactMessage"]);
                 if (!fullName || !phone) { if (contactFormMessage) { contactFormMessage.innerText = "لطفاً نام و شماره موبایل خود را وارد کنید."; contactFormMessage.classList.add("is-visible"); } return; }
                 if (fullName.length > 25) { if (contactFormMessage) { contactFormMessage.innerText = "نام و نام خانوادگی نمی‌تواند بیشتر از ۲۵ کاراکتر باشد."; contactFormMessage.classList.add("is-visible"); } return; }
                 if (brand.length > 25) { if (contactFormMessage) { contactFormMessage.innerText = "نام برند نمی‌تواند بیشتر از ۲۵ کاراکتر باشد."; contactFormMessage.classList.add("is-visible"); } return; }
@@ -186,13 +153,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    /* =========================================================
-       STAGE 1 — SHARED BASE FOOTER
-       Stage 2: remove the four placeholder contact items only.
-       No article column or new footer destinations are added here.
-    ========================================================= */
     const footer = document.querySelector(".footer");
     if (footer) {
+        const isBlogPage = window.location.pathname.includes("/blog/");
+        const homePrefix = isBlogPage ? "../" : "";
         footer.innerHTML = `
             <div class="container">
                 <div class="footer-grid">
@@ -203,11 +167,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="footer-links">
                         <h4>خدمات</h4>
                         <ul>
-                            <li>پنل پیامکی</li>
-                            <li>بانک شماره تخصصی</li>
-                            <li>اجرای کمپین</li>
-                            <li>API پیامکی</li>
-                            <li>تعرفه سازمانی</li>
+                            <li><a href="${homePrefix}#pricing">پنل پیامکی</a></li>
+                            <li><a href="${homePrefix}#database">بانک شماره تخصصی</a></li>
+                            <li><a href="${homePrefix}#solutions">اجرای کمپین</a></li>
+                            <li><a href="${homePrefix}#features">API پیامکی</a></li>
+                            <li><a href="${homePrefix}#pricing">تعرفه سازمانی</a></li>
                         </ul>
                     </div>
                     <div class="footer-links">
