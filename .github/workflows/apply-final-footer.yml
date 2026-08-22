@@ -1,0 +1,228 @@
+name: Apply final shared footer
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update footer and legal page
+        shell: python
+        run: |
+          from pathlib import Path
+          import re, os
+
+          root = Path('.')
+          pages = [
+              Path('index.html'),
+              Path('blog/index.html'),
+              Path('blog/sms-marketing-guide/index.html'),
+              Path('blog/best-time-to-send-promotional-sms/index.html'),
+              Path('blog/how-to-write-promotional-sms/index.html'),
+          ]
+
+          def rel(page, target):
+              return os.path.relpath(root / target, page.parent).replace(os.sep, '/')
+
+          def footer(page):
+              home = rel(page, 'index.html')
+              blog = rel(page, 'blog/index.html')
+              legal = rel(page, 'legal.html')
+              return f'''<footer class="footer payamake-footer" id="payamakeFooter">
+    <div class="container">
+        <div class="payamake-footer-grid">
+            <div class="payamake-footer-brand">
+                <h3>PAYAMAKE</h3>
+                <p>پیامک هدفمند برای کسب‌وکارها؛ از انتخاب مخاطب و بانک شماره تا اجرای کمپین.</p>
+            </div>
+
+            <div class="payamake-footer-column">
+                <h4>دسترسی سریع</h4>
+                <ul>
+                    <li><a href="{home}">خانه</a></li>
+                    <li><a href="{home}#pricing">تعرفه</a></li>
+                    <li><a href="{home}#trust">درباره ما</a></li>
+                    <li><a href="{blog}">مقالات</a></li>
+                    <li><a href="#" class="footer-contact-link">تماس با ما</a></li>
+                </ul>
+            </div>
+
+            <div class="payamake-footer-column">
+                <h4>خدمات</h4>
+                <ul>
+                    <li><a href="#" class="footer-contact-link">مشاوره پیامکی</a></li>
+                    <li><a href="{home}#database">بانک شماره</a></li>
+                    <li><a href="{home}#pricing">تعرفه و قیمت</a></li>
+                    <li><a href="{home}#solutions">اجرای کمپین</a></li>
+                </ul>
+            </div>
+
+            <div class="payamake-footer-contact">
+                <h4>ارتباط با ما</h4>
+                <p>برای مشاوره یا پشتیبانی تلفنی، می‌توانید با ما در ارتباط باشید.</p>
+                <a class="footer-phone" href="tel:09129858384">09129858384</a>
+                <p class="footer-contact-note">اگر ترجیح می‌دهید درخواستتان را آنلاین ثبت کنید، <a href="#" class="footer-contact-link">فرم تماس با ما</a> را تکمیل کنید تا در اسرع وقت با شما در ارتباط باشیم.</p>
+            </div>
+        </div>
+
+        <div class="payamake-footer-legal">
+            <a href="{legal}">حریم خصوصی و قوانین استفاده</a>
+        </div>
+
+        <div class="footer-bottom payamake-footer-bottom">
+            <span>© ۱۴۰۵ PAYAMAKE — تمامی حقوق متعلق به SGEX است.</span>
+        </div>
+    </div>
+</footer>'''
+
+          for page in pages:
+              text = page.read_text(encoding='utf-8')
+              new, count = re.subn(r'<footer\b[\s\S]*?</footer>', footer(page), text, count=1, flags=re.I)
+              if count != 1:
+                  raise SystemExit(f'Footer not found: {page}')
+              page.write_text(new, encoding='utf-8')
+
+          legal = root / 'legal.html'
+          if not legal.exists():
+              legal.write_text('''<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+    <title>حریم خصوصی و قوانین استفاده | PAYAMAKE</title>
+    <meta name="description" content="حریم خصوصی و قوانین استفاده از خدمات PAYAMAKE.">
+</head>
+<body class="legal-page-body">
+<header class="header">
+    <div class="container">
+        <a href="index.html" class="brand"><img src="assets/images/logo/payamake-header.png" alt="PAYAMAKE"><span class="brand-sub">پیامک هدفمند</span></a>
+        <nav class="navigation">
+            <a href="index.html#solutions">راهکارها</a>
+            <a href="index.html#database">بانک شماره</a>
+            <a href="index.html#features">امکانات</a>
+            <a href="index.html#pricing">تعرفه</a>
+            <a href="blog/index.html">مقالات</a>
+            <a href="index.html#trust">درباره ما</a>
+        </nav>
+        <a href="#" class="header-button">مشاوره رایگان</a>
+    </div>
+</header>
+<main class="legal-page">
+    <div class="container">
+        <div class="legal-page-intro">
+            <span>PAYAMAKE</span>
+            <h1>حریم خصوصی و قوانین استفاده</h1>
+            <p>چارچوب کلی حریم خصوصی و استفاده از خدمات PAYAMAKE.</p>
+        </div>
+        <div class="legal-columns">
+            <section class="legal-card" id="privacy">
+                <h2>حریم خصوصی</h2>
+                <p>PAYAMAKE اطلاعاتی مانند نام و نام خانوادگی، شماره موبایل، نام برند یا کسب‌وکار و موضوع درخواست را زمانی دریافت می‌کند که شما آن‌ها را از طریق فرم تماس در اختیار ما قرار می‌دهید.</p>
+                <p>این اطلاعات برای بررسی درخواست، ارائه مشاوره، پشتیبانی و برقراری ارتباط مرتبط با درخواست شما استفاده می‌شود.</p>
+                <h3>حفاظت از اطلاعات</h3>
+                <p>ما تلاش می‌کنیم اطلاعات دریافت‌شده را با روش‌های فنی و اجرایی مناسب محافظت کنیم. با این حال، هیچ روش انتقال یا نگهداری اطلاعات در اینترنت کاملاً بدون ریسک نیست.</p>
+                <h3>اصلاح یا حذف اطلاعات</h3>
+                <p>برای پرسش، اصلاح یا حذف اطلاعاتی که از طریق سایت در اختیار PAYAMAKE قرار داده‌اید، می‌توانید از راه‌های ارتباطی سایت درخواست خود را مطرح کنید.</p>
+            </section>
+            <section class="legal-card" id="terms">
+                <h2>قوانین و شرایط استفاده</h2>
+                <p>استفاده از سایت PAYAMAKE به معنی پذیرش استفاده متعارف و قانونی از محتوا و خدمات سایت است. اطلاعاتی که در فرم تماس وارد می‌کنید باید صحیح و متعلق به خودتان یا کسب‌وکارتان باشد.</p>
+                <p>تعرفه‌ها، شرایط همکاری، محدوده خدمات و جزئیات اجرای کمپین می‌تواند بر اساس نیاز کسب‌وکار و توافق طرفین تعیین شود. اطلاعات سایت به‌تنهایی قرارداد یا تعهد قطعی برای ارائه یک خدمت خاص محسوب نمی‌شود.</p>
+                <h3>استفاده مسئولانه از خدمات</h3>
+                <p>خدمات پیامکی باید مطابق قوانین و مقررات مربوط به ارتباطات و تبلیغات مورد استفاده قرار گیرند. مسئولیت صحت اطلاعات و محتوایی که برای اجرای کمپین در اختیار PAYAMAKE قرار می‌گیرد بر عهده ارائه‌دهنده آن اطلاعات است.</p>
+                <h3>تغییر شرایط</h3>
+                <p>ممکن است با توسعه خدمات یا تغییر الزامات قانونی، متن این صفحه به‌روزرسانی شود. نسخه منتشرشده در همین صفحه مبنای اطلاع‌رسانی فعلی سایت خواهد بود.</p>
+            </section>
+        </div>
+    </div>
+</main>
+<footer class="footer payamake-footer" id="payamakeFooter">
+    <div class="container">
+        <div class="payamake-footer-grid">
+            <div class="payamake-footer-brand"><h3>PAYAMAKE</h3><p>پیامک هدفمند برای کسب‌وکارها؛ از انتخاب مخاطب و بانک شماره تا اجرای کمپین.</p></div>
+            <div class="payamake-footer-column"><h4>دسترسی سریع</h4><ul><li><a href="index.html">خانه</a></li><li><a href="index.html#pricing">تعرفه</a></li><li><a href="index.html#trust">درباره ما</a></li><li><a href="blog/index.html">مقالات</a></li><li><a href="#" class="footer-contact-link">تماس با ما</a></li></ul></div>
+            <div class="payamake-footer-column"><h4>خدمات</h4><ul><li><a href="#" class="footer-contact-link">مشاوره پیامکی</a></li><li><a href="index.html#database">بانک شماره</a></li><li><a href="index.html#pricing">تعرفه و قیمت</a></li><li><a href="index.html#solutions">اجرای کمپین</a></li></ul></div>
+            <div class="payamake-footer-contact"><h4>ارتباط با ما</h4><p>برای مشاوره یا پشتیبانی تلفنی، می‌توانید با ما در ارتباط باشید.</p><a class="footer-phone" href="tel:09129858384">09129858384</a><p class="footer-contact-note">اگر ترجیح می‌دهید درخواستتان را آنلاین ثبت کنید، <a href="#" class="footer-contact-link">فرم تماس با ما</a> را تکمیل کنید تا در اسرع وقت با شما در ارتباط باشیم.</p></div>
+        </div>
+        <div class="payamake-footer-legal"><a href="legal.html">حریم خصوصی و قوانین استفاده</a></div>
+        <div class="footer-bottom payamake-footer-bottom"><span>© ۱۴۰۵ PAYAMAKE — تمامی حقوق متعلق به SGEX است.</span></div>
+    </div>
+</footer>
+<script src="js/main.js"></script>
+</body>
+</html>
+''', encoding='utf-8')
+
+          style = root / 'css/style.css'
+          css = style.read_text(encoding='utf-8')
+          css += r'''
+
+/* =========================================================
+   PAYAMAKE SHARED FOOTER + LEGAL PAGE
+========================================================= */
+.payamake-footer { background:#0f1f35; color:#fff; padding:56px 0 22px; }
+.payamake-footer-grid { display:grid; grid-template-columns:1.2fr 1fr 1fr 1.35fr; gap:34px; align-items:start; }
+.payamake-footer h3,.payamake-footer h4 { margin:0 0 14px; color:#fff; font-weight:800; }
+.payamake-footer h3 { font-size:22px; }
+.payamake-footer h4 { font-size:15px; }
+.payamake-footer-brand p,.payamake-footer-contact p { margin:0; color:rgba(255,255,255,.68); font-size:13px; line-height:2; }
+.payamake-footer-column ul { list-style:none; margin:0; padding:0; }
+.payamake-footer-column li { margin:0 0 9px; }
+.payamake-footer a { text-decoration:none; }
+.payamake-footer-column a,.payamake-footer-contact a { color:rgba(255,255,255,.72); font-size:13px; transition:color .2s ease; }
+.payamake-footer-column a:hover,.payamake-footer-contact a:hover { color:#00e0e6; }
+.payamake-footer-contact { border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:18px 20px; background:rgba(255,255,255,.035); }
+.payamake-footer-contact .footer-phone { display:inline-block; margin:8px 0 9px; color:#fff; font-size:20px; font-weight:800; direction:ltr; }
+.payamake-footer-contact .footer-contact-note { font-size:12px; line-height:1.9; }
+.payamake-footer-contact .footer-contact-note a { color:#fff; text-decoration:underline; text-underline-offset:3px; }
+.payamake-footer-legal { margin-top:34px; padding-top:18px; border-top:1px solid rgba(255,255,255,.09); text-align:center; }
+.payamake-footer-legal a { color:rgba(255,255,255,.58); font-size:12px; }
+.payamake-footer-bottom { margin-top:14px; padding-top:0; border-top:0; color:rgba(255,255,255,.48); text-align:center; font-size:12px; }
+.legal-page { padding:80px 0 90px; background:#f8fafc; min-height:60vh; }
+.legal-page-intro { max-width:760px; margin:0 auto 38px; text-align:center; }
+.legal-page-intro > span { color:#1A2F50; font-size:13px; font-weight:800; }
+.legal-page-intro h1 { margin:8px 0 12px; color:#1A2F50; font-size:34px; font-weight:900; line-height:1.6; }
+.legal-page-intro p { margin:0; color:#64748b; font-size:14px; line-height:2; }
+.legal-columns { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:stretch; }
+.legal-card { background:#fff; border:1px solid #e2e8f0; border-radius:22px; padding:32px; box-shadow:0 12px 35px rgba(15,23,42,.06); }
+.legal-card h2 { margin:0 0 20px; color:#1A2F50; font-size:23px; font-weight:900; }
+.legal-card h3 { margin:24px 0 8px; color:#1A2F50; font-size:16px; font-weight:800; }
+.legal-card p { margin:0 0 14px; color:#475569; font-size:14px; line-height:2.15; }
+.legal-card p:last-child { margin-bottom:0; }
+@media (max-width:768px) {
+  .payamake-footer { padding:42px 0 20px; }
+  .payamake-footer-grid { grid-template-columns:1fr; gap:28px; }
+  .payamake-footer-contact { padding:17px 18px; }
+  .legal-page { padding:52px 0 65px; }
+  .legal-page-intro { margin-bottom:28px; }
+  .legal-page-intro h1 { font-size:27px; }
+  .legal-columns { grid-template-columns:1fr; gap:18px; }
+  .legal-card { padding:24px 20px; }
+}
+'''
+          style.write_text(css, encoding='utf-8')
+
+          workflow = Path('.github/workflows/apply-final-footer.yml')
+          workflow.unlink()
+
+      - name: Commit final changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html blog/index.html blog/sms-marketing-guide/index.html blog/best-time-to-send-promotional-sms/index.html blog/how-to-write-promotional-sms/index.html legal.html css/style.css .github/workflows/apply-final-footer.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "feat: unify footer and add legal page"
+          git push
