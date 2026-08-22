@@ -708,7 +708,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span>مشاوره و پشتیبانی</span>
                             </div>
                             <p>برای مشاوره یا پشتیبانی تلفنی می‌توانید با ما تماس بگیرید.</p>
-                            <a class="footer-contact-phone" href="tel:09129858384" aria-label="تماس با PAYAMAKE با شماره 09129858384">09129858384</a>
+                            <a class="footer-contact-phone" href="tel:09129858384" aria-label="تماس با PAYAMAKE با شماره 09129858384">0912.9.85.83.84</a>
                         </div>
                     </div>
                 </div>
