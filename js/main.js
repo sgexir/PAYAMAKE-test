@@ -168,7 +168,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <span>(اختیاری)</span>
                 </label>
                 <select id="contactType" name="type">
-                    <option value="" selected></option>
+                    <option value="" selected disabled>انتخاب کنید</option>
                     <option value="مشاوره پیامکی">مشاوره پیامکی</option>
                     <option value="بانک شماره">بانک شماره</option>
                     <option value="تعرفه و قیمت">تعرفه و قیمت</option>
