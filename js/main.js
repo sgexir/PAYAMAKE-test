@@ -29,66 +29,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function updatePricing() {
             const volume = Number(volumeRange.value);
-
             volumeValue.innerText = volume.toLocaleString("fa-IR") + " پیامک";
-
             const min = Number(volumeRange.min);
             const max = Number(volumeRange.max);
             const percentage = ((volume - min) / (max - min)) * 100;
-
-            volumeRange.style.background = `linear-gradient(
-                to left,
-                #00e0e6 0%,
-                #00e0e6 ${percentage}%,
-                #e2e8f0 ${percentage}%,
-                #e2e8f0 100%
-            )`;
-
-            if (volume <= 100000) {
-                customerLevel.innerText = "مشتری عادی";
-                priceValue.innerText = "270 تومان";
-            } else if (volume <= 500000) {
-                customerLevel.innerText = "VIP";
-                priceValue.innerText = "240 تومان";
-            } else if (volume < 1000000) {
-                customerLevel.innerText = "VIP حجیم";
-                priceValue.innerText = "220 تومان";
-            } else {
-                customerLevel.innerText = "سازمانی";
-                priceValue.innerText = "تعرفه اختصاصی";
-            }
-
+            volumeRange.style.background = `linear-gradient(to left,#00e0e6 0%,#00e0e6 ${percentage}%,#e2e8f0 ${percentage}%,#e2e8f0 100%)`;
+            if (volume <= 100000) { customerLevel.innerText = "مشتری عادی"; priceValue.innerText = "270 تومان"; }
+            else if (volume <= 500000) { customerLevel.innerText = "VIP"; priceValue.innerText = "240 تومان"; }
+            else if (volume < 1000000) { customerLevel.innerText = "VIP حجیم"; priceValue.innerText = "220 تومان"; }
+            else { customerLevel.innerText = "سازمانی"; priceValue.innerText = "تعرفه اختصاصی"; }
             const isEnterprise = volume >= 1000000;
-
             if (isEnterprise) {
                 pricingBox.classList.add("enterprise-mode");
                 if (benefitsBox) benefitsBox.classList.add("enterprise-mode");
-
                 pricingButton.innerText = "درخواست مشاوره سازمانی";
-
-                if (mobileMediaQuery.matches && pricingButton.parentElement !== pricingControl) {
-                    pricingControl.appendChild(pricingButton);
-                }
-
-                if (!mobileMediaQuery.matches && pricingButton.parentElement !== originalButtonParent) {
-                    originalButtonParent.appendChild(pricingButton);
-                }
-
+                if (mobileMediaQuery.matches && pricingButton.parentElement !== pricingControl) pricingControl.appendChild(pricingButton);
+                if (!mobileMediaQuery.matches && pricingButton.parentElement !== originalButtonParent) originalButtonParent.appendChild(pricingButton);
                 pricingButton.classList.add("enterprise-button");
             } else {
                 pricingBox.classList.remove("enterprise-mode");
                 if (benefitsBox) benefitsBox.classList.remove("enterprise-mode");
-
                 pricingButton.innerText = "دریافت تعرفه اختصاصی";
-
-                if (pricingButton.parentElement !== originalButtonParent) {
-                    originalButtonParent.appendChild(pricingButton);
-                }
-
+                if (pricingButton.parentElement !== originalButtonParent) originalButtonParent.appendChild(pricingButton);
                 pricingButton.classList.remove("enterprise-button");
             }
         }
-
         volumeRange.addEventListener("input", updatePricing);
         mobileMediaQuery.addEventListener("change", updatePricing);
         updatePricing();
@@ -97,505 +62,125 @@ document.addEventListener("DOMContentLoaded", function () {
     /* =========================================================
        CONTACT MODAL
     ========================================================= */
-
     const contactModal = document.getElementById("contactModal");
     const contactModalClose = document.getElementById("contactModalClose");
-    const contactModalOverlay = contactModal
-        ? contactModal.querySelector(".contact-modal-overlay")
-        : null;
+    const contactModalOverlay = contactModal ? contactModal.querySelector(".contact-modal-overlay") : null;
     const contactForm = document.getElementById("contactForm");
     const contactFormMessage = document.getElementById("contactFormMessage");
 
     if (contactModal) {
-
         function resetContactFormState() {
-            if (contactForm) {
-                contactForm.reset();
-            }
-
+            if (contactForm) contactForm.reset();
             const contactType = document.getElementById("contactType");
             const customNeedField = document.getElementById("contactCustomNeedGroup");
             const messageTextarea = document.getElementById("contactMessage");
-
             if (contactType) contactType.value = "";
             if (customNeedField) customNeedField.hidden = true;
             if (messageTextarea) messageTextarea.value = "";
-
-            document.querySelectorAll(".contact-field-limit-message").forEach(function (message) {
-                message.style.display = "none";
-                message.classList.remove("is-visible");
-            });
-
-            if (contactFormMessage) {
-                contactFormMessage.innerText = "";
-                contactFormMessage.classList.remove("is-visible");
-            }
+            document.querySelectorAll(".contact-field-limit-message").forEach(function (message) { message.style.display = "none"; message.classList.remove("is-visible"); });
+            if (contactFormMessage) { contactFormMessage.innerText = ""; contactFormMessage.classList.remove("is-visible"); }
         }
 
         function addOptionalContactFields() {
             if (!contactForm || document.getElementById("contactBrand")) return;
-
             const messageField = document.getElementById("contactMessage");
-            const messageGroup = messageField
-                ? messageField.closest(".contact-form-group")
-                : null;
-
+            const messageGroup = messageField ? messageField.closest(".contact-form-group") : null;
             if (!messageGroup) return;
-
             const brandGroup = document.createElement("div");
             brandGroup.className = "contact-form-group";
-            brandGroup.innerHTML = `
-                <label for="contactBrand" title="حداکثر ۲۵ کاراکتر">
-                    نام برند / کسب‌وکار
-                    <span>(اختیاری)</span>
-                </label>
-                <input
-                    type="text"
-                    id="contactBrand"
-                    name="brand"
-                    placeholder="نام برند یا کسب‌وکار"
-                    autocomplete="organization"
-                    maxlength="25"
-                    title="حداکثر ۲۵ کاراکتر"
-                >
-            `;
-
+            brandGroup.innerHTML = `<label for="contactBrand" title="حداکثر ۲۵ کاراکتر">نام برند / کسب‌وکار <span>(اختیاری)</span></label><input type="text" id="contactBrand" name="brand" placeholder="نام برند یا کسب‌وکار" autocomplete="organization" maxlength="25" title="حداکثر ۲۵ کاراکتر">`;
             const typeGroup = document.createElement("div");
             typeGroup.className = "contact-form-group";
-            typeGroup.innerHTML = `
-                <label for="contactType">
-                    نیاز شما
-                    <span>(اختیاری)</span>
-                </label>
-                <select id="contactType" name="type">
-                    <option value="" selected disabled>انتخاب کنید</option>
-                    <option value="مشاوره پیامکی">مشاوره پیامکی</option>
-                    <option value="بانک شماره">بانک شماره</option>
-                    <option value="تعرفه و قیمت">تعرفه و قیمت</option>
-                    <option value="اجرای کمپین">اجرای کمپین</option>
-                    <option value="سایر">سایر</option>
-                </select>
-            `;
-
-            // Reuse the existing description textarea as the ONLY custom-need field.
-            // It stays optional and is hidden until "سایر" is selected.
+            typeGroup.innerHTML = `<label for="contactType">نیاز شما <span>(اختیاری)</span></label><select id="contactType" name="type"><option value="" selected disabled>انتخاب کنید</option><option value="مشاوره پیامکی">مشاوره پیامکی</option><option value="بانک شماره">بانک شماره</option><option value="تعرفه و قیمت">تعرفه و قیمت</option><option value="اجرای کمپین">اجرای کمپین</option><option value="سایر">سایر</option></select>`;
             messageGroup.id = "contactCustomNeedGroup";
-
             const messageLabel = messageGroup.querySelector("label");
             const messageTextarea = messageGroup.querySelector("textarea");
-
-            if (messageLabel) {
-                messageLabel.textContent = "نیاز خود را توضیح دهید (اختیاری)";
-                messageLabel.setAttribute("for", "contactMessage");
-                messageLabel.title = "حداکثر ۲۵ کاراکتر";
-            }
-
-            if (messageTextarea) {
-                messageTextarea.placeholder = "نیاز خود را توضیح دهید...";
-                messageTextarea.maxLength = 25;
-                messageTextarea.title = "حداکثر ۲۵ کاراکتر";
-            }
-
-            // Hide the single existing textarea until "سایر" is selected.
+            if (messageLabel) { messageLabel.textContent = "نیاز خود را توضیح دهید (اختیاری)"; messageLabel.setAttribute("for", "contactMessage"); messageLabel.title = "حداکثر ۲۵ کاراکتر"; }
+            if (messageTextarea) { messageTextarea.placeholder = "نیاز خود را توضیح دهید..."; messageTextarea.maxLength = 25; messageTextarea.title = "حداکثر ۲۵ کاراکتر"; }
             messageGroup.hidden = true;
-
             contactForm.insertBefore(brandGroup, messageGroup);
             contactForm.insertBefore(typeGroup, messageGroup);
-
             function setupPatternLimit(field, group) {
                 if (!field || !group) return;
-
-                field.maxLength = 25;
-                field.title = "حداکثر ۲۵ کاراکتر";
-
+                field.maxLength = 25; field.title = "حداکثر ۲۵ کاراکتر";
                 const limitMessage = document.createElement("div");
                 limitMessage.className = "contact-field-limit-message";
                 limitMessage.textContent = "حداکثر ۲۵ کاراکتر مجاز است.";
                 limitMessage.setAttribute("role", "status");
-                limitMessage.style.cssText = [
-                    "display:none",
-                    "margin-top:4px",
-                    "font-size:11px",
-                    "line-height:1.5",
-                    "color:#dc2626"
-                ].join(";");
-
+                limitMessage.style.cssText = "display:none;margin-top:4px;font-size:11px;line-height:1.5;color:#dc2626";
                 group.appendChild(limitMessage);
-
-                function showLimitMessage() {
-                    limitMessage.style.display = "block";
-                    limitMessage.classList.add("is-visible");
-                }
-
-                function hideLimitMessage() {
-                    limitMessage.style.display = "none";
-                    limitMessage.classList.remove("is-visible");
-                }
-
-                field.addEventListener("input", function () {
-                    if (field.value.length < 25) {
-                        hideLimitMessage();
-                    }
-                });
-
+                function showLimitMessage() { limitMessage.style.display = "block"; limitMessage.classList.add("is-visible"); }
+                function hideLimitMessage() { limitMessage.style.display = "none"; limitMessage.classList.remove("is-visible"); }
+                field.addEventListener("input", function () { if (field.value.length < 25) hideLimitMessage(); });
                 field.addEventListener("keydown", function (event) {
                     if (field.value.length < 25) return;
-
-                    const allowedKeys = [
-                        "Backspace",
-                        "Delete",
-                        "ArrowLeft",
-                        "ArrowRight",
-                        "ArrowUp",
-                        "ArrowDown",
-                        "Home",
-                        "End",
-                        "Tab"
-                    ];
-
-                    if (
-                        !allowedKeys.includes(event.key) &&
-                        !event.ctrlKey &&
-                        !event.metaKey
-                    ) {
-                        event.preventDefault();
-                        showLimitMessage();
-                    }
+                    const allowedKeys = ["Backspace","Delete","ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End","Tab"];
+                    if (!allowedKeys.includes(event.key) && !event.ctrlKey && !event.metaKey) { event.preventDefault(); showLimitMessage(); }
                 });
-
                 field.addEventListener("paste", function (event) {
-                    const pastedText = event.clipboardData
-                        ? event.clipboardData.getData("text")
-                        : "";
-
-                    if (field.value.length + pastedText.length > 25) {
-                        event.preventDefault();
-                        showLimitMessage();
-                    }
+                    const pastedText = event.clipboardData ? event.clipboardData.getData("text") : "";
+                    if (field.value.length + pastedText.length > 25) { event.preventDefault(); showLimitMessage(); }
                 });
             }
-
-            const fullNameField =
-                contactForm.elements.namedItem("name") ||
-                contactForm.elements.namedItem("fullName") ||
-                contactForm.elements.namedItem("fullname") ||
-                contactForm.elements.namedItem("full_name") ||
-                document.getElementById("contactName") ||
-                document.getElementById("fullName");
-
-            const fullNameGroup = fullNameField
-                ? fullNameField.closest(".contact-form-group")
-                : null;
-
-            if (fullNameField && fullNameGroup) {
-                setupPatternLimit(fullNameField, fullNameGroup);
-            }
-
-            setupPatternLimit(
-                document.getElementById("contactBrand"),
-                brandGroup
-            );
-
-            setupPatternLimit(
-                messageTextarea,
-                messageGroup
-            );
-
+            const fullNameField = contactForm.elements.namedItem("name") || contactForm.elements.namedItem("fullName") || contactForm.elements.namedItem("fullname") || contactForm.elements.namedItem("full_name") || document.getElementById("contactName") || document.getElementById("fullName");
+            const fullNameGroup = fullNameField ? fullNameField.closest(".contact-form-group") : null;
+            if (fullNameField && fullNameGroup) setupPatternLimit(fullNameField, fullNameGroup);
+            setupPatternLimit(document.getElementById("contactBrand"), brandGroup);
+            setupPatternLimit(messageTextarea, messageGroup);
             const contactType = document.getElementById("contactType");
-
-            if (contactType) {
-                contactType.addEventListener("change", function () {
-                    const isOther = contactType.value === "سایر";
-
-                    messageGroup.hidden = !isOther;
-
-                    if (!isOther && messageTextarea) {
-                        messageTextarea.value = "";
-                    }
-
-                    if (!isOther) {
-                        const limitMessage = messageGroup.querySelector(
-                            ".contact-field-limit-message"
-                        );
-
-                        if (limitMessage) {
-                            limitMessage.style.display = "none";
-                            limitMessage.classList.remove("is-visible");
-                        }
-                    }
-                });
-            }
+            if (contactType) contactType.addEventListener("change", function () {
+                const isOther = contactType.value === "سایر";
+                messageGroup.hidden = !isOther;
+                if (!isOther && messageTextarea) messageTextarea.value = "";
+                if (!isOther) { const limitMessage = messageGroup.querySelector(".contact-field-limit-message"); if (limitMessage) { limitMessage.style.display = "none"; limitMessage.classList.remove("is-visible"); } }
+            });
         }
-
         addOptionalContactFields();
-
         function openContactModal() {
             resetContactFormState();
-
-            contactModal.classList.add("is-open");
-            contactModal.setAttribute("aria-hidden", "false");
-            document.body.classList.add("modal-open");
-
-            const firstInput = contactModal.querySelector(
-                "input, select, textarea"
-            );
-
-            if (firstInput) {
-                setTimeout(function () {
-                    firstInput.focus();
-                }, 100);
-            }
+            contactModal.classList.add("is-open"); contactModal.setAttribute("aria-hidden", "false"); document.body.classList.add("modal-open");
+            const firstInput = contactModal.querySelector("input, select, textarea");
+            if (firstInput) setTimeout(function () { firstInput.focus(); }, 100);
         }
-
-        function closeContactModal() {
-            contactModal.classList.remove("is-open");
-            contactModal.setAttribute("aria-hidden", "true");
-            document.body.classList.remove("modal-open");
-        }
-
+        function closeContactModal() { contactModal.classList.remove("is-open"); contactModal.setAttribute("aria-hidden", "true"); document.body.classList.remove("modal-open"); }
         const contactButtons = document.querySelectorAll('a[href="#"]');
-
         contactButtons.forEach(function (button) {
             const buttonText = button.innerText.trim();
-
-            const isContactButton =
-                buttonText.includes("مشاوره") ||
-                buttonText.includes("شروع همکاری") ||
-                buttonText.includes("درخواست مشاوره") ||
-                buttonText.includes("تعرفه");
-
+            const isContactButton = buttonText.includes("مشاوره") || buttonText.includes("شروع همکاری") || buttonText.includes("درخواست مشاوره") || buttonText.includes("تعرفه");
             if (!isContactButton) return;
-
-            button.addEventListener("click", function (event) {
-                event.preventDefault();
-                openContactModal();
-            });
+            button.addEventListener("click", function (event) { event.preventDefault(); openContactModal(); });
         });
-
-        if (contactModalClose) {
-            contactModalClose.addEventListener("click", function () {
-                closeContactModal();
-            });
-        }
-
-        if (contactModalOverlay) {
-            contactModalOverlay.addEventListener("click", function () {
-                closeContactModal();
-            });
-        }
-
-        document.addEventListener("keydown", function (event) {
-            if (
-                event.key === "Escape" &&
-                contactModal.classList.contains("is-open")
-            ) {
-                closeContactModal();
-            }
-        });
-
-        /* =====================================================
-           CONTACT FORM → CLOUDFLARE WORKER
-        ========================================================= */
-
+        if (contactModalClose) contactModalClose.addEventListener("click", function () { closeContactModal(); });
+        if (contactModalOverlay) contactModalOverlay.addEventListener("click", function () { closeContactModal(); });
+        document.addEventListener("keydown", function (event) { if (event.key === "Escape" && contactModal.classList.contains("is-open")) closeContactModal(); });
         if (contactForm) {
             contactForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
-
-                const submitButton = contactForm.querySelector(
-                    'button[type="submit"], input[type="submit"]'
-                );
-
-                const originalButtonText = submitButton
-                    ? (submitButton.innerText || submitButton.value)
-                    : "";
-
-                function readField(names) {
-                    for (const name of names) {
-                        const byName = contactForm.elements.namedItem(name);
-
-                        if (byName) {
-                            return String(byName.value || "").trim();
-                        }
-
-                        const byId = document.getElementById(name);
-
-                        if (byId && contactForm.contains(byId)) {
-                            return String(byId.value || "").trim();
-                        }
-                    }
-
-                    return "";
-                }
-
-                const fullName = readField([
-                    "fullName",
-                    "fullname",
-                    "full_name",
-                    "name",
-                    "contactName"
-                ]);
-
-                const phone = readField([
-                    "phone",
-                    "mobile",
-                    "mobileNumber",
-                    "phoneNumber",
-                    "tel",
-                    "contactPhone"
-                ]);
-
-                const brand = readField([
-                    "brand",
-                    "company",
-                    "companyName",
-                    "business"
-                ]);
-
-                const type = readField([
-                    "type",
-                    "requestType",
-                    "request_type",
-                    "need",
-                    "subject"
-                ]);
-
-                const description = readField([
-                    "description",
-                    "message",
-                    "details",
-                    "text",
-                    "contactMessage"
-                ]);
-
-                if (!fullName || !phone) {
-                    if (contactFormMessage) {
-                        contactFormMessage.innerText =
-                            "لطفاً نام و شماره موبایل خود را وارد کنید.";
-
-                        contactFormMessage.classList.add("is-visible");
-                    }
-
-                    return;
-                }
-
-                if (fullName.length > 25) {
-                    if (contactFormMessage) {
-                        contactFormMessage.innerText =
-                            "نام و نام خانوادگی نمی‌تواند بیشتر از ۲۵ کاراکتر باشد.";
-
-                        contactFormMessage.classList.add("is-visible");
-                    }
-
-                    return;
-                }
-
-                if (brand.length > 25) {
-                    if (contactFormMessage) {
-                        contactFormMessage.innerText =
-                            "نام برند نمی‌تواند بیشتر از ۲۵ کاراکتر باشد.";
-
-                        contactFormMessage.classList.add("is-visible");
-                    }
-
-                    return;
-                }
-
-                if (description.length > 25) {
-                    if (contactFormMessage) {
-                        contactFormMessage.innerText =
-                            "توضیحات نیاز نمی‌تواند بیشتر از ۲۵ کاراکتر باشد.";
-
-                        contactFormMessage.classList.add("is-visible");
-                    }
-
-                    return;
-                }
-
-                if (submitButton) {
-                    submitButton.disabled = true;
-
-                    if ("value" in submitButton) {
-                        submitButton.value = "در حال ارسال...";
-                    } else {
-                        submitButton.innerText = "در حال ارسال...";
-                    }
-                }
-
-                if (contactFormMessage) {
-                    contactFormMessage.innerText =
-                        "در حال ثبت درخواست...";
-
-                    contactFormMessage.classList.add("is-visible");
-                }
-
+                const submitButton = contactForm.querySelector('button[type="submit"], input[type="submit"]');
+                const originalButtonText = submitButton ? (submitButton.innerText || submitButton.value) : "";
+                function readField(names) { for (const name of names) { const byName = contactForm.elements.namedItem(name); if (byName) return String(byName.value || "").trim(); const byId = document.getElementById(name); if (byId && contactForm.contains(byId)) return String(byId.value || "").trim(); } return ""; }
+                const fullName = readField(["fullName","fullname","full_name","name","contactName"]);
+                const phone = readField(["phone","mobile","mobileNumber","phoneNumber","tel","contactPhone"]);
+                const brand = readField(["brand","company","companyName","business"]);
+                const type = readField(["type","requestType","request_type","need","subject"]);
+                const description = readField(["description","message","details","text","contactMessage"]);
+                if (!fullName || !phone) { if (contactFormMessage) { contactFormMessage.innerText = "لطفاً نام و شماره موبایل خود را وارد کنید."; contactFormMessage.classList.add("is-visible"); } return; }
+                if (fullName.length > 25) { if (contactFormMessage) { contactFormMessage.innerText = "نام و نام خانوادگی نمی‌تواند بیشتر از ۲۵ کاراکتر باشد."; contactFormMessage.classList.add("is-visible"); } return; }
+                if (brand.length > 25) { if (contactFormMessage) { contactFormMessage.innerText = "نام برند نمی‌تواند بیشتر از ۲۵ کاراکتر باشد."; contactFormMessage.classList.add("is-visible"); } return; }
+                if (description.length > 25) { if (contactFormMessage) { contactFormMessage.innerText = "توضیحات نیاز نمی‌تواند بیشتر از ۲۵ کاراکتر باشد."; contactFormMessage.classList.add("is-visible"); } return; }
+                if (submitButton) { submitButton.disabled = true; if ("value" in submitButton) submitButton.value = "در حال ارسال..."; else submitButton.innerText = "در حال ارسال..."; }
+                if (contactFormMessage) { contactFormMessage.innerText = "در حال ثبت درخواست..."; contactFormMessage.classList.add("is-visible"); }
                 try {
-                    const response = await fetch(
-                        "https://payamake-contact.sgexir.workers.dev/",
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                fullName,
-                                phone,
-                                brand,
-                                type,
-                                description,
-                                source: "homepage"
-                            })
-                        }
-                    );
-
-                    let result;
-
-                    try {
-                        result = await response.json();
-                    } catch {
-                        result = {
-                            success: false,
-                            error: "پاسخ نامعتبر از سرور دریافت شد."
-                        };
-                    }
-
-                    if (!response.ok || !result.success) {
-                        throw new Error(
-                            result.error ||
-                            "ثبت درخواست انجام نشد. لطفاً دوباره تلاش کنید."
-                        );
-                    }
-
-                    if (contactFormMessage) {
-                        contactFormMessage.innerText =
-                            "درخواست شما با موفقیت دریافت شد. به‌زودی با شما تماس می‌گیریم.";
-
-                        contactFormMessage.classList.add("is-visible");
-                    }
-
+                    const response = await fetch("https://payamake-contact.sgexir.workers.dev/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fullName, phone, brand, type, description, source: "homepage" }) });
+                    let result; try { result = await response.json(); } catch { result = { success: false, error: "پاسخ نامعتبر از سرور دریافت شد." }; }
+                    if (!response.ok || !result.success) throw new Error(result.error || "ثبت درخواست انجام نشد. لطفاً دوباره تلاش کنید.");
+                    if (contactFormMessage) { contactFormMessage.innerText = "درخواست شما با موفقیت دریافت شد. به‌زودی با شما تماس می‌گیریم."; contactFormMessage.classList.add("is-visible"); }
                     contactForm.reset();
-
                 } catch (error) {
                     console.error("Contact form error:", error);
-
-                    if (contactFormMessage) {
-                        contactFormMessage.innerText =
-                            error instanceof Error
-                                ? error.message
-                                : "ارسال درخواست انجام نشد. لطفاً دوباره تلاش کنید.";
-
-                        contactFormMessage.classList.add("is-visible");
-                    }
-
+                    if (contactFormMessage) { contactFormMessage.innerText = error instanceof Error ? error.message : "ارسال درخواست انجام نشد. لطفاً دوباره تلاش کنید."; contactFormMessage.classList.add("is-visible"); }
                 } finally {
-                    if (submitButton) {
-                        submitButton.disabled = false;
-
-                        if ("value" in submitButton) {
-                            submitButton.value = originalButtonText;
-                        } else {
-                            submitButton.innerText = originalButtonText;
-                        }
-                    }
+                    if (submitButton) { submitButton.disabled = false; if ("value" in submitButton) submitButton.value = originalButtonText; else submitButton.innerText = originalButtonText; }
                 }
             });
         }
@@ -603,13 +188,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /* =========================================================
        STAGE 1 — SHARED BASE FOOTER
-       Keep the footer content identical on all five site pages.
-       Stage 1 intentionally does not add phone, legal links, or new
-       destinations; link work is reserved for Stage 2.
+       Stage 2: remove the four placeholder contact items only.
+       No article column or new footer destinations are added here.
     ========================================================= */
-
     const footer = document.querySelector(".footer");
-
     if (footer) {
         footer.innerHTML = `
             <div class="container">
@@ -630,12 +212,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                     <div class="footer-links">
                         <h4>ارتباط با ما</h4>
-                        <ul>
-                            <li>پنل پیامکی</li>
-                            <li>مشاوره رایگان</li>
-                            <li>پشتیبانی</li>
-                            <li>مقالات</li>
-                        </ul>
+                        <ul></ul>
                     </div>
                 </div>
                 <div class="footer-bottom">© PAYAMAKE - تمامی حقوق محفوظ است.</div>
