@@ -8,15 +8,11 @@
 ================================ */
 
 .header {
-
     background:#ffffff;
-
     border-bottom:1px solid #e5e7eb;
-
-    position:relative;
-
-    z-index:10;
-
+    position:sticky;
+    top:0;
+    z-index:100;
 }
 
 
