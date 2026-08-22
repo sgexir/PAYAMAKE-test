@@ -666,6 +666,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     color: #00e0e6;
                     transform: translateY(-1px);
                 }
+                .footer-bottom-sgex {
+                    color: inherit;
+                    text-decoration: none;
+                }
+                .footer-bottom-sgex:hover,
+                .footer-bottom-sgex:visited,
+                .footer-bottom-sgex:active {
+                    color: inherit;
+                    text-decoration: none;
+                }
                 @media (max-width: 768px) {
                     .footer-contact-card {
                         margin-top: 8px;
@@ -682,6 +692,12 @@ document.addEventListener("DOMContentLoaded", function () {
             `;
             document.head.appendChild(footerContactStyle);
         }
+
+        const persianYear = new Intl.DateTimeFormat("en-US-u-ca-persian-nu-latn", {
+            year: "numeric"
+        }).format(new Date());
+        const gregorianYear = new Date().getFullYear();
+        const footerYear = `${persianYear}/${gregorianYear}`;
 
         footer.innerHTML = `
             <div class="container">
@@ -712,7 +728,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
                     </div>
                 </div>
-                <div class="footer-bottom">© PAYAMAKE - تمامی حقوق محفوظ است.</div>
+                <div class="footer-bottom">© ${footerYear} PAYAMAKE — تمامی حقوق متعلق به <a class="footer-bottom-sgex" href="https://sgex.ir" target="_blank" rel="noopener noreferrer">SGEX</a> است.</div>
             </div>
         `;
     }
