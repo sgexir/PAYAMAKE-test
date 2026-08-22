@@ -603,8 +603,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /* =========================================================
        FOOTER
-       Stage 2: keep Services with real links, remove only the four
-       placeholder items under Contact Us.
+       Stage 3: compact glass contact card with phone only.
     ========================================================= */
 
     const footer = document.querySelector(".footer");
@@ -614,6 +613,75 @@ document.addEventListener("DOMContentLoaded", function () {
         const isBlogPage = path.includes("/blog/");
         const isArticlePage = isBlogPage && path !== "/blog/" && !path.endsWith("/blog/index.html");
         const homePrefix = isArticlePage ? "../../" : (isBlogPage ? "../" : "");
+
+        if (!document.getElementById("payamake-footer-contact-style")) {
+            const footerContactStyle = document.createElement("style");
+            footerContactStyle.id = "payamake-footer-contact-style";
+            footerContactStyle.textContent = `
+                .footer-contact-card {
+                    margin-top: 10px;
+                    padding: 11px 13px;
+                    border: 1px solid rgba(0, 224, 230, 0.18);
+                    border-radius: 14px;
+                    background: rgba(255, 255, 255, 0.045);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 24px rgba(0,0,0,0.06);
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                    box-sizing: border-box;
+                }
+                .footer-contact-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 7px;
+                    margin-bottom: 6px;
+                    font-size: 12px;
+                    font-weight: 700;
+                }
+                .footer-contact-status {
+                    width: 6px;
+                    height: 6px;
+                    border-radius: 50%;
+                    background: #00e0e6;
+                    box-shadow: 0 0 8px rgba(0,224,230,0.45);
+                    flex: 0 0 auto;
+                }
+                .footer-contact-card p {
+                    margin: 0 0 8px;
+                    font-size: 11px;
+                    line-height: 1.8;
+                    opacity: 0.72;
+                }
+                .footer-contact-phone {
+                    display: inline-block;
+                    direction: ltr;
+                    unicode-bidi: isolate;
+                    font-size: 15px;
+                    font-weight: 800;
+                    letter-spacing: 0.2px;
+                    color: inherit;
+                    text-decoration: none;
+                    transition: color 0.2s ease, transform 0.2s ease;
+                }
+                .footer-contact-phone:hover {
+                    color: #00e0e6;
+                    transform: translateY(-1px);
+                }
+                @media (max-width: 768px) {
+                    .footer-contact-card {
+                        margin-top: 8px;
+                        padding: 10px 12px;
+                        border-radius: 12px;
+                    }
+                    .footer-contact-card p {
+                        margin-bottom: 6px;
+                    }
+                    .footer-contact-phone {
+                        font-size: 14px;
+                    }
+                }
+            `;
+            document.head.appendChild(footerContactStyle);
+        }
 
         footer.innerHTML = `
             <div class="container">
@@ -634,8 +702,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                     <div class="footer-links">
                         <h4>ارتباط با ما</h4>
-                        <ul>
-                        </ul>
+                        <div class="footer-contact-card">
+                            <div class="footer-contact-label">
+                                <span class="footer-contact-status" aria-hidden="true"></span>
+                                <span>مشاوره و پشتیبانی</span>
+                            </div>
+                            <p>برای مشاوره یا پشتیبانی تلفنی می‌توانید با ما تماس بگیرید.</p>
+                            <a class="footer-contact-phone" href="tel:09129858384" aria-label="تماس با PAYAMAKE با شماره 09129858384">09129858384</a>
+                        </div>
                     </div>
                 </div>
                 <div class="footer-bottom">© PAYAMAKE - تمامی حقوق محفوظ است.</div>
