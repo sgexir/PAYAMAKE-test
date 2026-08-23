@@ -1,0 +1,346 @@
+/* ================================
+   PAYAMAKE BLOG
+================================ */
+
+
+/* ================================
+   Blog Header
+================================ */
+
+.header {
+    background:#ffffff;
+    border-bottom:1px solid #e5e7eb;
+    position:sticky;
+    top:0;
+    z-index:100;
+}
+
+.header .nav {
+    min-height:80px;
+    display:flex;
+    align-items:center;
+    gap:30px;
+}
+
+.header .logo {
+    color:var(--primary);
+    text-decoration:none;
+    font-size:26px;
+    font-weight:900;
+    white-space:nowrap;
+}
+
+.header .nav-links {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:30px;
+    margin-right:auto;
+    margin-left:0;
+}
+
+.header .nav-links a {
+    color:#475569;
+    text-decoration:none;
+    font-size:15px;
+    font-weight:700;
+    white-space:nowrap;
+    transition:.3s;
+}
+
+.header .nav-links a:hover,
+.header .nav-links a.active {
+    color:var(--accent);
+}
+
+.header .primary-button {
+    text-decoration:none;
+    white-space:nowrap;
+    margin-right:0;
+    margin-left:auto;
+}
+
+/* ================================
+   Blog Hero
+================================ */
+
+.blog-hero {
+    padding:100px 0 90px;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(0,224,230,.12), transparent 35%),
+        linear-gradient(135deg, #f8fafc 0%, #ecfeff 100%);
+}
+
+.blog-hero-content {
+    max-width:850px;
+    margin:0 auto;
+    text-align:center;
+}
+
+.blog-eyebrow {
+    display:inline-block;
+    margin-bottom:20px;
+    color:var(--accent);
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:2px;
+}
+
+.blog-hero h1 {
+    color:var(--primary);
+    font-size:48px;
+    line-height:1.5;
+    font-weight:900;
+    margin-bottom:25px;
+}
+
+.blog-hero p {
+    color:#475569;
+    font-size:19px;
+    line-height:2.1;
+    max-width:700px;
+    margin:0 auto;
+}
+
+/* ================================
+   Blog Section
+================================ */
+
+.blog-section {
+    padding:110px 0 120px;
+    background:#ffffff;
+}
+
+.blog-grid {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:30px;
+}
+
+/* ================================
+   Blog Card
+================================ */
+
+.blog-card {
+    min-width:0;
+    background:var(--background);
+    border:1px solid #e5e7eb;
+    border-radius:30px;
+    overflow:hidden;
+    transition:.3s;
+}
+
+.blog-card:hover {
+    transform:translateY(-8px);
+    box-shadow:0 25px 60px rgba(15,23,42,.08);
+}
+
+.blog-card-image {
+    height:210px;
+    overflow:hidden;
+    background:linear-gradient(135deg, #cffafe, #e0f2fe);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#0891b2;
+    font-size:0;
+}
+
+.blog-card-image img {
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.blog-card-content {
+    padding:30px;
+}
+
+.blog-category {
+    display:inline-block;
+    margin-bottom:15px;
+    color:var(--accent);
+    font-size:13px;
+    font-weight:800;
+}
+
+.blog-card h2 {
+    color:var(--primary);
+    font-size:22px;
+    line-height:1.7;
+    font-weight:800;
+    margin-bottom:15px;
+}
+
+.blog-card p {
+    color:#64748b;
+    font-size:15px;
+    line-height:2;
+    margin-bottom:20px;
+}
+
+.blog-card a {
+    color:var(--primary);
+    font-size:15px;
+    font-weight:800;
+    text-decoration:none;
+}
+
+.blog-card a:hover {
+    color:var(--accent);
+}
+
+/* ================================
+   Responsive
+================================ */
+
+@media(max-width:1000px){
+    .blog-grid {
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
+@media(max-width:800px){
+    .header .nav {
+        flex-wrap:wrap;
+        padding:15px 0;
+    }
+
+    .header .nav-links {
+        order:3;
+        width:100%;
+        margin:0;
+        justify-content:center;
+        gap:20px;
+    }
+
+    .header .primary-button {
+        margin-left:0;
+        margin-right:0;
+    }
+}
+
+@media(max-width:700px){
+    .blog-hero {
+        padding:75px 0 65px;
+    }
+
+    .blog-hero h1 {
+        font-size:34px;
+    }
+
+    .blog-hero p {
+        font-size:16px;
+    }
+
+    .blog-section {
+        padding:80px 0;
+    }
+
+    .blog-grid {
+        grid-template-columns:1fr;
+    }
+
+    .blog-card-content {
+        padding:25px;
+    }
+}
+
+/* ================================
+   FOOTER CONTACT CARD — BLOG FIX
+   main.js rebuilds the footer after stylesheets load.
+   !important keeps this page consistent with the final
+   approved contact card sizing used elsewhere.
+================================ */
+
+.footer-contact-card {
+    margin-top:10px !important;
+    padding:18px 16px !important;
+    min-height:148px !important;
+    border:1px solid rgba(0,224,230,0.18) !important;
+    border-radius:14px !important;
+    background:rgba(255,255,255,0.045) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 24px rgba(0,0,0,0.06) !important;
+    backdrop-filter:blur(10px) !important;
+    -webkit-backdrop-filter:blur(10px) !important;
+    box-sizing:border-box !important;
+}
+
+.footer-contact-label {
+    display:flex !important;
+    align-items:center !important;
+    gap:9px !important;
+    margin-bottom:9px !important;
+    font-size:18px !important;
+    font-weight:700 !important;
+    line-height:1.6 !important;
+}
+
+.footer-contact-status {
+    width:7px !important;
+    height:7px !important;
+    border-radius:50% !important;
+    background:#00e0e6 !important;
+    box-shadow:0 0 8px rgba(0,224,230,0.45) !important;
+    flex:0 0 auto !important;
+}
+
+.footer-contact-card p {
+    margin:0 0 10px !important;
+    font-size:16px !important;
+    line-height:1.9 !important;
+    opacity:.78 !important;
+}
+
+.footer-contact-phone {
+    display:inline-flex !important;
+    align-items:center !important;
+    gap:7px !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    font-size:22px !important;
+    line-height:1.6 !important;
+    font-weight:800 !important;
+    letter-spacing:.2px !important;
+    color:inherit !important;
+    text-decoration:none !important;
+}
+
+.footer-contact-phone::before {
+    content:"📞" !important;
+    display:inline-block !important;
+    font-size:19px !important;
+    line-height:1 !important;
+}
+
+.footer-contact-phone:hover {
+    color:#00e0e6 !important;
+}
+
+@media (max-width:768px) {
+    .footer-contact-card {
+        margin-top:8px !important;
+        padding:16px 14px !important;
+        min-height:140px !important;
+        border-radius:12px !important;
+    }
+
+    .footer-contact-label {
+        font-size:17px !important;
+        margin-bottom:8px !important;
+    }
+
+    .footer-contact-card p {
+        font-size:15px !important;
+        margin-bottom:9px !important;
+    }
+
+    .footer-contact-phone {
+        font-size:21px !important;
+    }
+
+    .footer-contact-phone::before {
+        font-size:18px !important;
+    }
+}
