@@ -1,36 +1,67 @@
 -- PAYAMAKE D1 Staging
--- Migration 0002: Authentication & Session Security
+-- Migration 0002: Authentication Security & MFA
+-- Layer 1: Identity & Access
 --
--- Scope:
---   Adds Layer 2 security storage for TOTP, recovery codes,
---   SMS/email OTP challenges, and authentication audit events.
--- Safety:
---   Does not alter, drop, or recreate existing tables.
---   Reuses the existing `admin_sessions` table from Migration 0001.
---   Does not insert credentials, TOTP secrets, recovery codes, or OTPs.
+-- Security notes:
+-- * TOTP secrets MUST be encrypted by the Worker before storage.
+-- * OTPs and recovery codes MUST be stored as hashes, never plaintext.
+-- * OTP challenges are single-use via consumed_at and bounded by attempts/max_attempts.
+-- * This migration does not alter, drop, or recreate existing tables.
 
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE admin_security (
-    admin_id INTEGER PRIMARY KEY,
-    totp_enabled INTEGER NOT NULL DEFAULT 0
-        CHECK (totp_enabled IN (0, 1)),
-    totp_secret_encrypted TEXT,
-    totp_enabled_at TEXT,
-    failed_login_count INTEGER NOT NULL DEFAULT 0
-        CHECK (failed_login_count >= 0),
-    locked_until TEXT,
-    security_version INTEGER NOT NULL DEFAULT 1
-        CHECK (security_version >= 1),
+CREATE TABLE mfa_methods (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_id INTEGER NOT NULL,
+    method_type TEXT NOT NULL
+        CHECK (method_type IN ('totp', 'email_otp', 'sms_otp')),
+    secret_encrypted TEXT,
+    destination_masked TEXT,
+    is_primary INTEGER NOT NULL DEFAULT 0
+        CHECK (is_primary IN (0, 1)),
+    is_verified INTEGER NOT NULL DEFAULT 0
+        CHECK (is_verified IN (0, 1)),
+    is_enabled INTEGER NOT NULL DEFAULT 1
+        CHECK (is_enabled IN (0, 1)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    verified_at TEXT,
     FOREIGN KEY (admin_id)
         REFERENCES admins(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CHECK (
+        (method_type = 'totp' AND secret_encrypted IS NOT NULL)
+        OR
+        (method_type IN ('email_otp', 'sms_otp') AND destination_masked IS NOT NULL)
+    )
+);
+
+CREATE TABLE otp_challenges (
+    id TEXT PRIMARY KEY,
+    admin_id INTEGER NOT NULL,
+    method_id INTEGER NOT NULL,
+    code_hash TEXT NOT NULL,
+    purpose TEXT NOT NULL
+        CHECK (purpose IN ('login', 'step_up', 'password_reset')),
+    attempts INTEGER NOT NULL DEFAULT 0
+        CHECK (attempts >= 0),
+    max_attempts INTEGER NOT NULL DEFAULT 5
+        CHECK (max_attempts > 0),
+    expires_at TEXT NOT NULL,
+    consumed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id)
+        REFERENCES admins(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (method_id)
+        REFERENCES mfa_methods(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
-CREATE TABLE admin_recovery_codes (
+CREATE TABLE recovery_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     admin_id INTEGER NOT NULL,
     code_hash TEXT NOT NULL,
@@ -42,81 +73,23 @@ CREATE TABLE admin_recovery_codes (
         ON UPDATE CASCADE
 );
 
-CREATE INDEX idx_admin_recovery_codes_admin_id
-    ON admin_recovery_codes(admin_id);
-
-CREATE TABLE otp_challenges (
-    id TEXT PRIMARY KEY,
-    admin_id INTEGER NOT NULL,
-    purpose TEXT NOT NULL
-        CHECK (
-            purpose IN (
-                'login',
-                'step_up',
-                'password_change',
-                'email_change',
-                'phone_change',
-                'two_factor_disable',
-                'admin_create',
-                'admin_role_change',
-                'recovery'
-            )
-        ),
-    channel TEXT NOT NULL
-        CHECK (channel IN ('sms', 'email')),
-    target TEXT NOT NULL,
-    code_hash TEXT NOT NULL,
-    attempts INTEGER NOT NULL DEFAULT 0
-        CHECK (attempts >= 0),
-    max_attempts INTEGER NOT NULL DEFAULT 5
-        CHECK (max_attempts > 0),
-    expires_at TEXT NOT NULL,
-    consumed_at TEXT,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (admin_id)
-        REFERENCES admins(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-);
-
-CREATE INDEX idx_otp_challenges_admin_id
-    ON otp_challenges(admin_id);
-
-CREATE INDEX idx_otp_challenges_expires_at
-    ON otp_challenges(expires_at);
-
-CREATE INDEX idx_otp_challenges_admin_purpose
-    ON otp_challenges(admin_id, purpose);
-
-CREATE TABLE auth_events (
+CREATE TABLE login_attempts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     admin_id INTEGER,
-    event_type TEXT NOT NULL
-        CHECK (
-            event_type IN (
-                'login_success',
-                'login_failed',
-                'logout',
-                'totp_setup_started',
-                'totp_enabled',
-                'totp_failed',
-                'totp_disabled',
-                'recovery_code_used',
-                'otp_sent',
-                'otp_verified',
-                'otp_failed',
-                'session_created',
-                'session_revoked',
-                'account_locked',
-                'account_unlocked',
-                'password_changed',
-                'security_change'
-            )
-        ),
-    method TEXT,
+    email TEXT,
     ip_address TEXT,
     user_agent TEXT,
-    metadata TEXT,
+    stage TEXT NOT NULL
+        CHECK (stage IN (
+            'password_failed',
+            'password_success',
+            'mfa_failed',
+            'mfa_success',
+            'locked'
+        )),
+    success INTEGER NOT NULL
+        CHECK (success IN (0, 1)),
+    failure_reason TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (admin_id)
         REFERENCES admins(id)
@@ -124,11 +97,46 @@ CREATE TABLE auth_events (
         ON UPDATE CASCADE
 );
 
-CREATE INDEX idx_auth_events_admin_id
-    ON auth_events(admin_id);
+CREATE INDEX idx_mfa_methods_admin_id
+    ON mfa_methods(admin_id);
 
-CREATE INDEX idx_auth_events_created_at
-    ON auth_events(created_at);
+CREATE INDEX idx_mfa_methods_type
+    ON mfa_methods(method_type);
 
-CREATE INDEX idx_auth_events_event_type
-    ON auth_events(event_type);
+CREATE INDEX idx_otp_challenges_admin_id
+    ON otp_challenges(admin_id);
+
+CREATE INDEX idx_otp_challenges_expires_at
+    ON otp_challenges(expires_at);
+
+CREATE INDEX idx_otp_challenges_method_id
+    ON otp_challenges(method_id);
+
+CREATE INDEX idx_recovery_codes_admin_id
+    ON recovery_codes(admin_id);
+
+CREATE INDEX idx_login_attempts_admin_id
+    ON login_attempts(admin_id);
+
+CREATE INDEX idx_login_attempts_email
+    ON login_attempts(email);
+
+CREATE INDEX idx_login_attempts_ip
+    ON login_attempts(ip_address);
+
+CREATE INDEX idx_login_attempts_created_at
+    ON login_attempts(created_at);
+
+-- At most one primary MFA method per admin.
+CREATE UNIQUE INDEX uq_mfa_methods_primary_admin
+    ON mfa_methods(admin_id)
+    WHERE is_primary = 1;
+
+-- Prevent duplicate email/SMS MFA destinations for the same admin and method type.
+CREATE UNIQUE INDEX uq_mfa_methods_admin_type_destination
+    ON mfa_methods(admin_id, method_type, destination_masked)
+    WHERE destination_masked IS NOT NULL;
+
+-- Prevent duplicate recovery-code hashes for one admin.
+CREATE UNIQUE INDEX uq_recovery_codes_admin_hash
+    ON recovery_codes(admin_id, code_hash);
