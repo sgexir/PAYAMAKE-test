@@ -1,0 +1,19 @@
+# PAYAMAKE
+
+PAYAMAKE is a Persian-language SMS marketing and messaging service focused on targeted SMS campaigns, specialized phone-number databases, campaign execution, and messaging tools.
+
+## Main pages
+
+- https://payamake.ir/
+- https://payamake.ir/blog/index.html
+- https://payamake.ir/blog/sms-marketing-guide/
+- https://payamake.ir/blog/how-to-write-promotional-sms/
+- https://payamake.ir/blog/best-time-to-send-promotional-sms/
+
+## Main topics
+
+- Targeted SMS marketing
+- SMS campaign management
+- Specialized phone-number databases
+- SMS pricing and campaign planning
+- SMS API and integrations

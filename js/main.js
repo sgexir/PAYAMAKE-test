@@ -108,6 +108,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (contactModal) {
 
+        let contactModalTrigger = null;
+
         function resetContactFormState() {
             if (contactForm) {
                 contactForm.reset();
@@ -329,7 +331,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
         addOptionalContactFields();
 
-        function openContactModal() {
+        function getModalFocusableElements() {
+            return Array.from(
+                contactModal.querySelectorAll(
+                    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                )
+            ).filter(function (element) {
+                return !element.hidden && element.getClientRects().length > 0;
+            });
+        }
+
+        function openContactModal(trigger) {
+            contactModalTrigger = trigger || document.activeElement;
             resetContactFormState();
 
             contactModal.classList.add("is-open");
@@ -351,6 +364,18 @@ document.addEventListener("DOMContentLoaded", function () {
             contactModal.classList.remove("is-open");
             contactModal.setAttribute("aria-hidden", "true");
             document.body.classList.remove("modal-open");
+
+            if (
+                contactModalTrigger &&
+                document.contains(contactModalTrigger) &&
+                typeof contactModalTrigger.focus === "function"
+            ) {
+                setTimeout(function () {
+                    contactModalTrigger.focus();
+                }, 0);
+            }
+
+            contactModalTrigger = null;
         }
 
         const contactButtons = document.querySelectorAll('a[href="#"]');
@@ -368,7 +393,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             button.addEventListener("click", function (event) {
                 event.preventDefault();
-                openContactModal();
+                openContactModal(button);
             });
         });
 
@@ -385,11 +410,28 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         document.addEventListener("keydown", function (event) {
-            if (
-                event.key === "Escape" &&
-                contactModal.classList.contains("is-open")
-            ) {
+            if (!contactModal.classList.contains("is-open")) return;
+
+            if (event.key === "Escape") {
                 closeContactModal();
+                return;
+            }
+
+            if (event.key !== "Tab") return;
+
+            const focusableElements = getModalFocusableElements();
+
+            if (!focusableElements.length) return;
+
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            if (event.shiftKey && document.activeElement === firstElement) {
+                event.preventDefault();
+                lastElement.focus();
+            } else if (!event.shiftKey && document.activeElement === lastElement) {
+                event.preventDefault();
+                firstElement.focus();
             }
         });
 
