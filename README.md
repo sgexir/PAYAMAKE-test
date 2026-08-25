@@ -39,6 +39,12 @@ PAYAMAKE/
     └── images/
 ```
 
+## Staging build trigger
+
+Cloudflare Workers Builds is connected to this repository. This line is intentionally updated to trigger the first GitHub-to-Cloudflare build after the integration is connected.
+
+The production source of truth remains `sgexir/PAYAMAKE` and is not changed by this staging trigger.
+
 ## Main site
 
 `index.html` contains the main PAYAMAKE landing page, including navigation, hero, solutions, database, pricing, features, trust/about content, contact modal, and footer.
