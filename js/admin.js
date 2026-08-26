@@ -1304,6 +1304,10 @@ async function initDashboard() {
             return;
         }
 
+        document.body.classList.remove(
+            "admin-auth-pending"
+        );
+
         if (
             result.admin &&
             adminName

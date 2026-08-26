@@ -630,3 +630,7 @@
         align-items: center;
     }
 }
+/* Hide admin panel until authentication is confirmed */
+.admin-auth-pending {
+    display: none !important;
+}
