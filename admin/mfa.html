@@ -60,18 +60,24 @@
                     کد احراز هویت
                 </label>
 
-                <input
+                                <input
                     id="mfaCode"
                     name="code"
                     type="text"
-                    inputmode="numeric"
                     autocomplete="one-time-code"
-                    maxlength="6"
-                    pattern="[0-9]{6}"
+                    maxlength="9"
                     placeholder="000000"
                     dir="ltr"
                     required
                 >
+
+                <p
+                    id="recoveryCodeHint"
+                    class="form-hint"
+                >
+                    کد ۶ رقمی Google Authenticator یا کد بازیابی
+                    مانند XXXX-XXXX را وارد کنید.
+                </p>
             </div>
 
             <button

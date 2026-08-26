@@ -139,6 +139,51 @@
 
         </form>
 
+
+        <section
+            id="recoveryCodesSection"
+            class="recovery-codes-section"
+            hidden
+        >
+            <div class="security-notice">
+                <div class="security-icon">!</div>
+
+                <div>
+                    <strong>کدهای بازیابی</strong>
+
+                    <p>
+                        این کدها فقط همین یک بار نمایش داده می‌شوند.
+                        آن‌ها را در یک محل امن ذخیره کنید.
+                    </p>
+                </div>
+            </div>
+
+            <div
+                id="recoveryCodesList"
+                class="recovery-codes-list"
+                dir="ltr"
+                aria-label="Recovery Codes"
+            ></div>
+
+            <div class="recovery-codes-actions">
+                <button
+                    id="copyRecoveryCodesButton"
+                    class="admin-button"
+                    type="button"
+                >
+                    کپی کدها
+                </button>
+
+                <button
+                    id="continueAfterRecoveryButton"
+                    class="admin-button primary"
+                    type="button"
+                >
+                    ادامه
+                </button>
+            </div>
+        </section>
+
         <a
             class="back-link"
             href="/admin/login.html"

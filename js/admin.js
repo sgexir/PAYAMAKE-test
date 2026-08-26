@@ -149,10 +149,19 @@ function showMessage(
 }
 
 
-function normalizeCode(value) {
-    return String(value || "")
-        .replace(/\D/g, "")
-        .slice(0, 6);
+function normalizeMfaCode(value) {
+    const raw =
+        String(value || "")
+            .trim()
+            .toUpperCase();
+
+    if (/^\d{6}$/.test(raw)) {
+        return raw;
+    }
+
+    return raw
+        .replace(/\s+/g, "")
+        .slice(0, 9);
 }
 
 
@@ -539,9 +548,7 @@ function initMfaSetup() {
                 );
 
             const code =
-                normalizeCode(
-                    codeInput.value
-                );
+                normalizeMfaCode(codeInput.value);
 
             if (!methodId) {
                 showMessage(
@@ -552,10 +559,16 @@ function initMfaSetup() {
                 return;
             }
 
-            if (!/^\d{6}$/.test(code)) {
+            const isTotpCode =
+                /^\d{6}$/.test(code);
+
+            const isRecoveryCode =
+                /^[A-F0-9]{4}-[A-F0-9]{4}$/.test(code);
+
+            if (!isTotpCode && !isRecoveryCode) {
                 showMessage(
                     message,
-                    "کد ۶ رقمی Google Authenticator را وارد کنید."
+                    "کد ۶ رقمی یا کد بازیابی XXXX-XXXX را وارد کنید."
                 );
 
                 codeInput.focus();
@@ -588,19 +601,25 @@ function initMfaSetup() {
                     result.success === true &&
                     result.verified === true
                 ) {
-                    showMessage(
-                        message,
-                        "احراز هویت دومرحله‌ای با موفقیت فعال شد.",
-                        "success"
-                    );
+                    const recoveryCodes =
+                        Array.isArray(result.recoveryCodes)
+                            ? result.recoveryCodes
+                            : [];
+
+                    if (!recoveryCodes.length) {
+                        showMessage(
+                            message,
+                            "MFA فعال شد، اما کدهای بازیابی از سرور دریافت نشد.",
+                            "error"
+                        );
+
+                        return;
+                    }
+
+                    showRecoveryCodes(recoveryCodes);
 
                     clearPreauthToken();
                     clearMfaState();
-
-                    setTimeout(() => {
-                        window.location.href =
-                            "/admin/login.html";
-                    }, 1000);
 
                     return;
                 }
@@ -632,11 +651,97 @@ function initMfaSetup() {
         "input",
         () => {
             codeInput.value =
-                normalizeCode(
-                    codeInput.value
-                );
+                normalizeMfaCode(codeInput.value);
         }
     );
+}
+
+
+function showRecoveryCodes(recoveryCodes) {
+    const section =
+        document.getElementById(
+            "recoveryCodesSection"
+        );
+
+    const list =
+        document.getElementById(
+            "recoveryCodesList"
+        );
+
+    const copyButton =
+        document.getElementById(
+            "copyRecoveryCodesButton"
+        );
+
+    const continueButton =
+        document.getElementById(
+            "continueAfterRecoveryButton"
+        );
+
+    if (
+        !section ||
+        !list ||
+        !copyButton ||
+        !continueButton
+    ) {
+        throw new Error(
+            "Recovery codes UI elements not found"
+        );
+    }
+
+    list.innerHTML = "";
+
+    recoveryCodes.forEach((code) => {
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "recovery-code";
+
+        item.textContent =
+            String(code);
+
+        list.appendChild(item);
+    });
+
+    const text =
+        recoveryCodes.join("\n");
+
+    copyButton.onclick =
+        async () => {
+            try {
+                await navigator.clipboard.writeText(
+                    text
+                );
+
+                copyButton.textContent =
+                    "کپی شد";
+
+                setTimeout(() => {
+                    copyButton.textContent =
+                        "کپی کدها";
+                }, 1500);
+
+            } catch {
+                window.prompt(
+                    "کدهای بازیابی را کپی کنید:",
+                    text
+                );
+            }
+        };
+
+    continueButton.onclick =
+        () => {
+            window.location.href =
+                "/admin/login.html";
+        };
+
+    section.hidden = false;
+
+    section.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
 }
 
 
@@ -914,9 +1019,7 @@ async function initMfa() {
                 );
 
             const code =
-                normalizeCode(
-                    codeInput.value
-                );
+                normalizeMfaCode(codeInput.value);
 
             if (!methodId) {
                 showMessage(
@@ -927,10 +1030,16 @@ async function initMfa() {
                 return;
             }
 
-            if (!/^\d{6}$/.test(code)) {
+            const isTotpCode =
+                /^\d{6}$/.test(code);
+
+            const isRecoveryCode =
+                /^[A-F0-9]{4}-[A-F0-9]{4}$/.test(code);
+
+            if (!isTotpCode && !isRecoveryCode) {
                 showMessage(
                     message,
-                    "کد ۶ رقمی را وارد کنید."
+                    "کد ۶ رقمی یا کد بازیابی XXXX-XXXX را وارد کنید."
                 );
 
                 codeInput.focus();
@@ -1022,9 +1131,7 @@ async function initMfa() {
         "input",
         () => {
             codeInput.value =
-                normalizeCode(
-                    codeInput.value
-                );
+                normalizeMfaCode(codeInput.value);
         }
     );
 }

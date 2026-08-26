@@ -273,9 +273,42 @@ async function verifyMfaSetup(request, env) {
      WHERE id = ? AND admin_id = ?`
   ).bind(method.id, preauth.adminId).run();
 
-  return json({ success: true, verified: true, methodId: method.id });
+  const recoveryCodes = await generateRecoveryCodes(env.DB, preauth.adminId);
+
+  return json({
+    success: true,
+    verified: true,
+    methodId: method.id,
+    recoveryCodes
+  });
 }
 
+
+async function generateRecoveryCodes(db, adminId) {
+  const codes = [];
+
+  await db.prepare(
+    "DELETE FROM recovery_codes WHERE admin_id = ? AND used_at IS NULL"
+  ).bind(adminId).run();
+
+  for (let i = 0; i < 10; i++) {
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+
+    const hex = bytesToHex(bytes).toUpperCase();
+    const code = hex.slice(0, 4) + "-" + hex.slice(4, 8);
+    const codeHash = await sha256(code);
+
+    await db.prepare(
+      `INSERT INTO recovery_codes (admin_id, code_hash)
+       VALUES (?, ?)`
+    ).bind(adminId, codeHash).run();
+
+    codes.push(code);
+  }
+
+  return codes;
+}
 
 async function sendMfaOtp(request, env) {
   const body = await readJson(request);
@@ -336,7 +369,9 @@ async function verifyMfa(request, env) {
   }
 
   const preauth = await verifyPreAuthToken(env, String(body.preauthToken));
-  if (!preauth) return json({ success: false, error: "نشست احراز هویت منقضی شده است." }, 401);
+  if (!preauth) {
+    return json({ success: false, error: "نشست احراز هویت منقضی شده است." }, 401);
+  }
 
   const method = await env.DB.prepare(
     `SELECT id, admin_id, method_type
@@ -345,55 +380,193 @@ async function verifyMfa(request, env) {
      LIMIT 1`
   ).bind(Number(body.methodId), preauth.adminId).first();
 
-  if (!method) return json({ success: false, error: "روش احراز هویت معتبر نیست." }, 400);
+  if (!method) {
+    return json({ success: false, error: "روش احراز هویت معتبر نیست." }, 400);
+  }
+
+  const submittedCode = String(body.code || "")
+    .trim()
+    .toUpperCase();
 
   let valid = false;
+  let usedRecoveryCode = false;
+
   if (method.method_type === "totp") {
-    if (!env.AUTH_ENCRYPTION_KEY) return json({ success: false, error: "کلید رمزنگاری MFA تنظیم نشده است." }, 500);
-    const row = await env.DB.prepare(
-      "SELECT secret_encrypted FROM mfa_methods WHERE id = ? AND admin_id = ? LIMIT 1"
-    ).bind(method.id, preauth.adminId).first();
-    const secret = await decryptSecret(env.AUTH_ENCRYPTION_KEY, row?.secret_encrypted);
-    valid = Boolean(secret && await verifyTotp(secret, String(body.code), Math.floor(Date.now() / 1000)));
+    /*
+     * TOTP:
+     * 6 digits -> Google Authenticator
+     *
+     * Recovery:
+     * XXXX-XXXX -> one-time recovery code
+     */
+    if (/^\d{6}$/.test(submittedCode)) {
+      if (!env.AUTH_ENCRYPTION_KEY) {
+        return json({
+          success: false,
+          error: "کلید رمزنگاری MFA تنظیم نشده است."
+        }, 500);
+      }
+
+      const row = await env.DB.prepare(
+        "SELECT secret_encrypted FROM mfa_methods WHERE id = ? AND admin_id = ? LIMIT 1"
+      ).bind(method.id, preauth.adminId).first();
+
+      const secret = await decryptSecret(
+        env.AUTH_ENCRYPTION_KEY,
+        row?.secret_encrypted
+      );
+
+      valid = Boolean(
+        secret &&
+        await verifyTotp(
+          secret,
+          submittedCode,
+          Math.floor(Date.now() / 1000)
+        )
+      );
+    } else {
+      const recoveryCode = submittedCode.replace(/\s+/g, "");
+
+      if (/^[A-F0-9]{4}-[A-F0-9]{4}$/.test(recoveryCode)) {
+        const codeHash = await sha256(recoveryCode);
+
+        const recovery = await env.DB.prepare(
+          `SELECT id
+           FROM recovery_codes
+           WHERE admin_id = ? AND code_hash = ? AND used_at IS NULL
+           LIMIT 1`
+        ).bind(preauth.adminId, codeHash).first();
+
+        if (recovery) {
+          const consumed = await env.DB.prepare(
+            `UPDATE recovery_codes
+             SET used_at = CURRENT_TIMESTAMP
+             WHERE id = ? AND admin_id = ? AND used_at IS NULL`
+          ).bind(recovery.id, preauth.adminId).run();
+
+          valid =
+            Number(consumed.meta?.changes || 0) === 1;
+
+          usedRecoveryCode = valid;
+        }
+      }
+    }
   } else {
     const challenge = await env.DB.prepare(
       `SELECT id, code_hash, attempts, max_attempts, expires_at, consumed_at
        FROM otp_challenges
        WHERE id = ? AND admin_id = ? AND method_id = ? AND purpose = 'login'
        LIMIT 1`
-    ).bind(String(body.challengeId || ""), preauth.adminId, method.id).first();
+    ).bind(
+      String(body.challengeId || ""),
+      preauth.adminId,
+      method.id
+    ).first();
 
-    if (!challenge) return json({ success: false, error: "کد OTP معتبر نیست." }, 400);
-    if (challenge.consumed_at || new Date(challenge.expires_at).getTime() <= Date.now()) {
-      return json({ success: false, error: "کد OTP منقضی شده است." }, 400);
-    }
-    if (Number(challenge.attempts) >= Number(challenge.max_attempts)) {
-      return json({ success: false, error: "تعداد تلاش‌های این کد تمام شده است." }, 429);
+    if (!challenge) {
+      return json({
+        success: false,
+        error: "کد OTP معتبر نیست."
+      }, 400);
     }
 
-    const submittedHash = await sha256(String(body.code).replace(/\D/g, ""));
-    valid = safeEqualHex(submittedHash, challenge.code_hash);
-    await env.DB.prepare("UPDATE otp_challenges SET attempts = attempts + 1 WHERE id = ?").bind(challenge.id).run();
+    if (
+      challenge.consumed_at ||
+      new Date(challenge.expires_at).getTime() <= Date.now()
+    ) {
+      return json({
+        success: false,
+        error: "کد OTP منقضی شده است."
+      }, 400);
+    }
+
+    if (
+      Number(challenge.attempts) >=
+      Number(challenge.max_attempts)
+    ) {
+      return json({
+        success: false,
+        error: "تعداد تلاش‌های این کد تمام شده است."
+      }, 429);
+    }
+
+    const submittedHash = await sha256(
+      String(body.code).replace(/\D/g, "")
+    );
+
+    valid = safeEqualHex(
+      submittedHash,
+      challenge.code_hash
+    );
+
+    await env.DB.prepare(
+      "UPDATE otp_challenges SET attempts = attempts + 1 WHERE id = ?"
+    ).bind(challenge.id).run();
+
     if (valid) {
-      await env.DB.prepare("UPDATE otp_challenges SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?").bind(challenge.id).run();
+      await env.DB.prepare(
+        "UPDATE otp_challenges SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?"
+      ).bind(challenge.id).run();
     }
   }
 
-  const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || null;
-  const userAgent = request.headers.get("User-Agent") || null;
+  const ip =
+    request.headers.get("CF-Connecting-IP") ||
+    request.headers.get("X-Forwarded-For") ||
+    null;
+
+  const userAgent =
+    request.headers.get("User-Agent") ||
+    null;
 
   if (!valid) {
-    await recordLoginAttempt(env.DB, preauth.adminId, null, ip, userAgent, "mfa_failed", false, "invalid_mfa");
-    return json({ success: false, error: "کد احراز هویت صحیح نیست." }, 401);
+    await recordLoginAttempt(
+      env.DB,
+      preauth.adminId,
+      null,
+      ip,
+      userAgent,
+      "mfa_failed",
+      false,
+      "invalid_mfa"
+    );
+
+    return json({
+      success: false,
+      error: "کد احراز هویت صحیح نیست."
+    }, 401);
   }
 
-  const session = await createSession(env.DB, preauth.adminId, ip, userAgent);
-  await markLastLogin(env.DB, preauth.adminId);
-  await recordLoginAttempt(env.DB, preauth.adminId, null, ip, userAgent, "mfa_success", true, null);
+  const session = await createSession(
+    env.DB,
+    preauth.adminId,
+    ip,
+    userAgent
+  );
 
-  return json({ success: true, authenticated: true, mfaRequired: true }, 200, session.cookie);
+  await markLastLogin(
+    env.DB,
+    preauth.adminId
+  );
+
+  await recordLoginAttempt(
+    env.DB,
+    preauth.adminId,
+    null,
+    ip,
+    userAgent,
+    "mfa_success",
+    true,
+    usedRecoveryCode ? "recovery_code" : null
+  );
+
+  return json({
+    success: true,
+    authenticated: true,
+    mfaRequired: true,
+    usedRecoveryCode
+  }, 200, session.cookie);
 }
-
 async function logout(request, env) {
   const token = readCookie(request.headers.get("Cookie"), "payamake_session");
   if (token) {
