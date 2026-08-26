@@ -238,11 +238,17 @@
         padding:80px 0;
     }
 
+    /* Mobile only: force the cards into one horizontal carousel row. */
     .blog-grid {
-        display:flex;
+        display:flex !important;
+        flex-direction:row !important;
+        flex-wrap:nowrap !important;
+        grid-template-columns:none !important;
+        width:100% !important;
+        max-width:100% !important;
         gap:18px;
-        overflow-x:auto;
-        overflow-y:hidden;
+        overflow-x:auto !important;
+        overflow-y:hidden !important;
         scroll-snap-type:x mandatory;
         -webkit-overflow-scrolling:touch;
         scrollbar-width:none;
@@ -254,7 +260,10 @@
     }
 
     .blog-card {
-        flex:0 0 86%;
+        flex:0 0 86% !important;
+        width:86% !important;
+        max-width:86% !important;
+        min-width:86% !important;
         scroll-snap-align:start;
     }
 
