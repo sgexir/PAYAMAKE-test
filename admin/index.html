@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت | PAYAMAKE</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="admin-body">
+
+<header class="admin-header">
+    <div class="admin-container">
+
+        <a href="../" class="admin-logo">
+            <strong>PAYAMAKE</strong>
+            <span>پنل مدیریت</span>
+        </a>
+
+        <div class="admin-header-actions">
+            <span id="adminName" class="admin-user">
+                در حال بررسی...
+            </span>
+
+            <button
+                id="logoutButton"
+                class="logout-button"
+                type="button"
+            >
+                خروج
+            </button>
+        </div>
+
+    </div>
+</header>
+
+<main class="admin-main">
+    <div class="admin-container">
+
+        <section class="dashboard-welcome">
+            <span class="eyebrow">مدیریت PAYAMAKE</span>
+            <h1>خوش آمدید</h1>
+            <p>
+                از این بخش می‌توانید مدیریت سرویس و درخواست‌های مشتریان را انجام دهید.
+            </p>
+        </section>
+
+        <section class="dashboard-grid">
+
+            <article class="dashboard-card">
+                <div class="card-icon">✓</div>
+                <div>
+                    <span class="card-label">وضعیت حساب</span>
+                    <strong class="status-online">احراز شده</strong>
+                </div>
+            </article>
+
+            <article class="dashboard-card">
+                <div class="card-icon">۲</div>
+                <div>
+                    <span class="card-label">احراز هویت</span>
+                    <strong>MFA فعال</strong>
+                </div>
+            </article>
+
+            <article class="dashboard-card">
+                <div class="card-icon">◆</div>
+                <div>
+                    <span class="card-label">دسترسی</span>
+                    <strong>مدیر سیستم</strong>
+                </div>
+            </article>
+
+        </section>
+
+        <section class="dashboard-section">
+
+            <div class="section-heading">
+                <h2>بخش‌های مدیریت</h2>
+            </div>
+
+            <div class="feature-grid">
+
+                <button class="feature-card" type="button">
+                    <div class="feature-icon">▣</div>
+                    <div>
+                        <strong>درخواست‌های مشاوره</strong>
+                        <small>
+                            مشاهده و مدیریت درخواست‌های مشتریان
+                        </small>
+                    </div>
+                </button>
+
+                <button class="feature-card" type="button">
+                    <div class="feature-icon">▤</div>
+                    <div>
+                        <strong>پیامک‌ها</strong>
+                        <small>
+                            مشاهده وضعیت ارسال پیامک‌ها
+                        </small>
+                    </div>
+                </button>
+
+                <button class="feature-card" type="button">
+                    <div class="feature-icon">◈</div>
+                    <div>
+                        <strong>محتوا</strong>
+                        <small>
+                            مدیریت محتوای سایت و مقالات
+                        </small>
+                    </div>
+                </button>
+
+                <button class="feature-card" type="button">
+                    <div class="feature-icon">⚙</div>
+                    <div>
+                        <strong>تنظیمات</strong>
+                        <small>
+                            تنظیمات حساب و امنیت
+                        </small>
+                    </div>
+                </button>
+
+            </div>
+
+        </section>
+
+        <section class="security-notice">
+            <div class="security-icon">✓</div>
+
+            <div>
+                <strong>اتصال امن برقرار است</strong>
+                <p>
+                    نشست مدیریت با کوکی امن و HttpOnly محافظت می‌شود.
+                </p>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<script src="../js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>فعال‌سازی احراز هویت | PAYAMAKE</title>
+
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+
+<body class="admin-body">
+
+<main class="auth-page">
+
+    <div class="auth-card">
+
+        <div class="auth-brand">
+            <span class="auth-brand-main">PAYAMAKE</span>
+            <span>پنل مدیریت</span>
+        </div>
+
+        <div class="auth-heading">
+            <h1>فعال‌سازی احراز هویت</h1>
+
+            <p>
+                برای امنیت بیشتر حساب مدیریت،
+                Google Authenticator را فعال کنید.
+            </p>
+        </div>
+
+        <div
+            id="mfaSetupMessage"
+            class="form-message"
+            role="alert"
+            aria-live="polite"
+        ></div>
+
+        <form
+            id="mfaSetupForm"
+            class="admin-form"
+        >
+
+            <input
+                id="mfaMethodId"
+                type="hidden"
+                name="methodId"
+            >
+
+            <div class="security-notice">
+
+                <div class="security-icon">✓</div>
+
+                <div>
+                    <strong>
+                        Google Authenticator
+                    </strong>
+
+                    <p>
+                        Secret زیر را در برنامه
+                        Google Authenticator اضافه کنید.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="form-group">
+                <label for="mfaSecret">
+                    Secret Key
+                </label>
+
+                <input
+                    id="mfaSecret"
+                    type="text"
+                    readonly
+                    dir="ltr"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="mfaAccount">
+                    حساب
+                </label>
+
+                <input
+                    id="mfaAccount"
+                    type="text"
+                    readonly
+                    dir="ltr"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="mfaIssuer">
+                    سرویس
+                </label>
+
+                <input
+                    id="mfaIssuer"
+                    type="text"
+                    readonly
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="mfaCode">
+                    کد ۶ رقمی Google Authenticator
+                </label>
+
+                <input
+                    id="mfaCode"
+                    name="code"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    placeholder="000000"
+                    dir="ltr"
+                    required
+                >
+            </div>
+
+            <button
+                id="verifySetupButton"
+                class="admin-button primary"
+                type="submit"
+            >
+                تأیید و فعال‌سازی
+            </button>
+
+        </form>
+
+        <a
+            class="back-link"
+            href="/admin/login.html"
+        >
+            بازگشت به ورود
+        </a>
+
+    </div>
+
+</main>
+
+<script src="../js/admin.js"></script>
+
+</body>
+</html>

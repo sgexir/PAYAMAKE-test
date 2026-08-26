@@ -19,6 +19,14 @@ export async function handleAdminAuth(request, env) {
     return login(request, env);
   }
 
+  if (request.method === "POST" && path === "/api/admin/mfa/setup") {
+    return setupMfa(request, env);
+  }
+
+  if (request.method === "POST" && path === "/api/admin/mfa/setup/verify") {
+    return verifyMfaSetup(request, env);
+  }
+
   if (request.method === "POST" && path === "/api/admin/mfa/send") {
     return sendMfaOtp(request, env);
   }
@@ -92,9 +100,16 @@ async function login(request, env) {
   ).bind(admin.id).all();
 
   const requireMfa = env.AUTH_REQUIRE_MFA !== "false";
+  const preauth = await createPreAuthToken(env, admin.id, ip);
+
   if (requireMfa && !methods.results?.length) {
     await recordLoginAttempt(env.DB, admin.id, email, ip, userAgent, "locked", false, "mfa_not_configured");
-    return json({ success: false, error: "برای این حساب احراز هویت دومرحله‌ای هنوز فعال نشده است.", code: "MFA_SETUP_REQUIRED" }, 403);
+    return json({
+      success: false,
+      error: "برای این حساب احراز هویت دومرحله‌ای هنوز فعال نشده است.",
+      code: "MFA_SETUP_REQUIRED",
+      preauthToken: preauth,
+    }, 403);
   }
 
   if (!methods.results?.length) {
@@ -107,7 +122,7 @@ async function login(request, env) {
     );
   }
 
-  const preauth = await createPreAuthToken(env, admin.id, ip);
+
   return json({
     success: true,
     authenticated: false,
@@ -121,6 +136,146 @@ async function login(request, env) {
     })),
   });
 }
+
+async function setupMfa(request, env) {
+  const body = await readJson(request);
+
+  if (!body?.preauthToken) {
+    return json({ success: false, error: "نشست احراز هویت ناقص است." }, 400);
+  }
+
+  const preauth = await verifyPreAuthToken(
+    env,
+    String(body.preauthToken)
+  );
+
+  if (!preauth) {
+    return json({
+      success: false,
+      error: "نشست احراز هویت منقضی شده است."
+    }, 401);
+  }
+
+  if (!env.AUTH_ENCRYPTION_KEY) {
+    return json({
+      success: false,
+      error: "کلید رمزنگاری MFA تنظیم نشده است."
+    }, 500);
+  }
+
+  const admin = await env.DB.prepare(
+    `SELECT id, email, is_active
+     FROM admins
+     WHERE id = ?
+     LIMIT 1`
+  ).bind(preauth.adminId).first();
+
+  if (!admin || !admin.is_active) {
+    return json({
+      success: false,
+      error: "حساب مدیر معتبر نیست یا غیرفعال شده است."
+    }, 403);
+  }
+
+  const existing = await env.DB.prepare(
+    `SELECT id
+     FROM mfa_methods
+     WHERE admin_id = ?
+       AND method_type = 'totp'
+     LIMIT 1`
+  ).bind(admin.id).first();
+
+  if (existing) {
+    return json({
+      success: false,
+      error: "روش TOTP برای این حساب قبلاً ایجاد شده است."
+    }, 409);
+  }
+
+  const secret = await generateTotpSecret();
+
+  const encryptedSecret = await encryptSecret(
+    env.AUTH_ENCRYPTION_KEY,
+    secret
+  );
+
+  const result = await env.DB.prepare(
+    `INSERT INTO mfa_methods
+      (
+        admin_id,
+        method_type,
+        secret_encrypted,
+        destination_masked,
+        is_primary,
+        is_verified,
+        is_enabled
+      )
+     VALUES (?, 'totp', ?, 'TOTP', 1, 0, 1)`
+  ).bind(
+    admin.id,
+    encryptedSecret
+  ).run();
+
+  return json({
+    success: true,
+    methodId: result.meta.last_row_id,
+    type: "totp",
+    secret,
+    issuer: "PAYAMAKE",
+    account: admin.email
+  });
+}
+
+
+async function verifyMfaSetup(request, env) {
+  const body = await readJson(request);
+  if (!body?.preauthToken || !body?.methodId || !body?.code) {
+    return json({ success: false, error: "اطلاعات راه‌اندازی MFA ناقص است." }, 400);
+  }
+
+  const preauth = await verifyPreAuthToken(env, String(body.preauthToken));
+  if (!preauth) {
+    return json({ success: false, error: "نشست احراز هویت منقضی شده است." }, 401);
+  }
+
+  const method = await env.DB.prepare(
+    `SELECT id, admin_id, method_type, secret_encrypted, is_verified
+     FROM mfa_methods
+     WHERE id = ? AND admin_id = ? AND method_type = 'totp' AND is_enabled = 1
+     LIMIT 1`
+  ).bind(Number(body.methodId), preauth.adminId).first();
+
+  if (!method) {
+    return json({ success: false, error: "روش TOTP معتبر نیست." }, 400);
+  }
+
+  if (method.is_verified) {
+    return json({ success: false, error: "این روش TOTP قبلاً تأیید شده است." }, 409);
+  }
+
+  const secret = await decryptSecret(env.AUTH_ENCRYPTION_KEY, method.secret_encrypted);
+  if (!secret) {
+    return json({ success: false, error: "Secret مربوط به MFA قابل بازیابی نیست." }, 500);
+  }
+
+
+  const valid = await verifyTotp(secret, String(body.code), Math.floor(Date.now() / 1000));
+  if (!valid) {
+    return json({ success: false, error: "کد Google Authenticator صحیح نیست." }, 401);
+  }
+
+  await env.DB.prepare(
+    `UPDATE mfa_methods
+     SET is_verified = 1,
+         is_primary = 1,
+         verified_at = CURRENT_TIMESTAMP,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND admin_id = ?`
+  ).bind(method.id, preauth.adminId).run();
+
+  return json({ success: true, verified: true, methodId: method.id });
+}
+
 
 async function sendMfaOtp(request, env) {
   const body = await readJson(request);
@@ -373,6 +528,28 @@ async function hotp(secret, counter) {
   return String(binary % 1000000).padStart(6, "0");
 }
 
+async function generateTotpSecret() {
+  const bytes = new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  return base32Encode(bytes);
+}
+
+async function encryptSecret(keyMaterial, plaintext) {
+  const rawKey = base64UrlToBytes(keyMaterial);
+  if (rawKey.length !== 32) throw new Error("AUTH_ENCRYPTION_KEY must decode to 32 bytes.");
+
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await crypto.subtle.importKey("raw", rawKey, "AES-GCM", false, ["encrypt"]);
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    new TextEncoder().encode(plaintext)
+  );
+
+  return `${base64UrlEncodeBytes(iv)}.${base64UrlEncodeBytes(new Uint8Array(ciphertext))}`;
+}
+
+
 async function decryptSecret(keyMaterial, packed) {
   if (!packed) return null;
   try {
@@ -516,6 +693,12 @@ function base64UrlEncode(value) {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
+function base64UrlEncodeBytes(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 function base64UrlDecode(value) {
   const padded = String(value).replace(/-/g, "+").replace(/_/g, "/") + "===".slice((String(value).length + 3) % 4);
   const binary = atob(padded);
@@ -541,4 +724,27 @@ function base32Decode(input) {
   const output = [];
   for (let i = 0; i + 8 <= bits.length; i += 8) output.push(Number.parseInt(bits.slice(i, i + 8), 2));
   return new Uint8Array(output);
+}
+
+function base32Encode(bytes) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let output = "";
+  let buffer = 0;
+  let bits = 0;
+
+  for (const byte of bytes) {
+    buffer = (buffer << 8) | byte;
+    bits += 8;
+
+    while (bits >= 5) {
+      bits -= 5;
+      output += alphabet[(buffer >> bits) & 31];
+    }
+  }
+
+  if (bits > 0) {
+    output += alphabet[(buffer << (5 - bits)) & 31];
+  }
+
+  return output;
 }
