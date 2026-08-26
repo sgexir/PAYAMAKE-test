@@ -1,0 +1,39 @@
+/* PAYAMAKE blog mobile carousel: intentionally isolated from the main blog stylesheet. */
+@media screen and (max-width: 700px) {
+    .blog-section .container {
+        min-width: 0;
+    }
+
+    .blog-section .blog-grid {
+        display: grid !important;
+        grid-template-columns: none !important;
+        grid-template-rows: 1fr !important;
+        grid-auto-flow: column !important;
+        grid-auto-columns: 86% !important;
+        gap: 18px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        overscroll-behavior-x: contain !important;
+        scroll-snap-type: x mandatory !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        padding: 0 4px 12px !important;
+    }
+
+    .blog-section .blog-grid::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    .blog-section .blog-card {
+        grid-column: auto !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        margin: 0 !important;
+        scroll-snap-align: start !important;
+    }
+}
