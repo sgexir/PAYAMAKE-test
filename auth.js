@@ -4,6 +4,8 @@ const PREAUTH_TTL_SECONDS = 5 * 60;
 const OTP_TTL_SECONDS = 5 * 60;
 const MAX_LOGIN_FAILURES = 8;
 const RATE_WINDOW_SECONDS = 15 * 60;
+const MAX_MFA_FAILURES = 8;
+const MFA_RATE_WINDOW_SECONDS = 15 * 60;
 
 const DUMMY_PASSWORD_HASH =
   "pbkdf2$sha256$100000$00112233445566778899aabbccddeeff$" +
@@ -238,6 +240,17 @@ async function verifyMfaSetup(request, env) {
     return json({ success: false, error: "نشست احراز هویت منقضی شده است." }, 401);
   }
 
+  const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || null;
+  const userAgent = request.headers.get("User-Agent") || null;
+
+  if (await isMfaRateLimited(env.DB, preauth.adminId, ip)) {
+    await recordLoginAttempt(env.DB, preauth.adminId, null, ip, userAgent, "locked", false, "mfa_rate_limited");
+    return json({
+      success: false,
+      error: "تعداد تلاش‌های احراز هویت دومرحله‌ای بیش از حد مجاز است. کمی بعد دوباره تلاش کنید."
+    }, 429);
+  }
+
   const method = await env.DB.prepare(
     `SELECT id, admin_id, method_type, secret_encrypted, is_verified
      FROM mfa_methods
@@ -319,6 +332,17 @@ async function sendMfaOtp(request, env) {
   const preauth = await verifyPreAuthToken(env, String(body.preauthToken));
   if (!preauth) return json({ success: false, error: "نشست احراز هویت منقضی شده است." }, 401);
 
+  const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || null;
+  const userAgent = request.headers.get("User-Agent") || null;
+
+  if (await isMfaRateLimited(env.DB, preauth.adminId, ip)) {
+    await recordLoginAttempt(env.DB, preauth.adminId, null, ip, userAgent, "locked", false, "mfa_rate_limited");
+    return json({
+      success: false,
+      error: "تعداد تلاش‌های احراز هویت دومرحله‌ای بیش از حد مجاز است. کمی بعد دوباره تلاش کنید."
+    }, 429);
+  }
+
   const method = await env.DB.prepare(
     `SELECT id, admin_id, method_type, destination_masked
      FROM mfa_methods
@@ -371,6 +395,17 @@ async function verifyMfa(request, env) {
   const preauth = await verifyPreAuthToken(env, String(body.preauthToken));
   if (!preauth) {
     return json({ success: false, error: "نشست احراز هویت منقضی شده است." }, 401);
+  }
+
+  const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || null;
+  const userAgent = request.headers.get("User-Agent") || null;
+
+  if (await isMfaRateLimited(env.DB, preauth.adminId, ip)) {
+    await recordLoginAttempt(env.DB, preauth.adminId, null, ip, userAgent, "locked", false, "mfa_rate_limited");
+    return json({
+      success: false,
+      error: "تعداد تلاش‌های احراز هویت دومرحله‌ای بیش از حد مجاز است. کمی بعد دوباره تلاش کنید."
+    }, 429);
   }
 
   const method = await env.DB.prepare(
@@ -510,14 +545,6 @@ async function verifyMfa(request, env) {
     }
   }
 
-  const ip =
-    request.headers.get("CF-Connecting-IP") ||
-    request.headers.get("X-Forwarded-For") ||
-    null;
-
-  const userAgent =
-    request.headers.get("User-Agent") ||
-    null;
 
   if (!valid) {
     await recordLoginAttempt(
@@ -770,6 +797,21 @@ async function isRateLimited(db, email, ip) {
   ).bind(cutoff, email, ip, ip).first();
   return Number(row?.failures || 0) >= MAX_LOGIN_FAILURES;
 }
+
+async function isMfaRateLimited(db, adminId, ip) {
+  const cutoff = new Date(Date.now() - MFA_RATE_WINDOW_SECONDS * 1000).toISOString();
+  const row = await db.prepare(
+    `SELECT COUNT(*) AS failures
+     FROM login_attempts
+     WHERE created_at >= ?
+       AND stage = 'mfa_failed'
+       AND success = 0
+       AND admin_id = ?
+       AND (? IS NULL OR ip_address = ?)`
+  ).bind(cutoff, adminId, ip, ip).first();
+  return Number(row?.failures || 0) >= MAX_MFA_FAILURES;
+}
+
 
 async function recordLoginAttempt(db, adminId, email, ip, userAgent, stage, success, failureReason) {
   await db.prepare(
