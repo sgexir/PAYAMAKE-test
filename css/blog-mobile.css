@@ -1,15 +1,15 @@
-/* PAYAMAKE blog mobile carousel: intentionally isolated from the main blog stylesheet. */
-@media screen and (max-width: 700px) {
+/* PAYAMAKE blog mobile carousel: isolated mobile-only horizontal slider. */
+@media screen and (max-width: 900px) {
     .blog-section .container {
-        min-width: 0;
+        min-width: 0 !important;
     }
 
     .blog-section .blog-grid {
-        display: grid !important;
-        grid-template-columns: none !important;
-        grid-template-rows: 1fr !important;
-        grid-auto-flow: column !important;
-        grid-auto-columns: 86% !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
         gap: 18px !important;
         width: 100% !important;
         max-width: 100% !important;
@@ -21,6 +21,7 @@
         -webkit-overflow-scrolling: touch !important;
         scrollbar-width: none !important;
         padding: 0 4px 12px !important;
+        box-sizing: border-box !important;
     }
 
     .blog-section .blog-grid::-webkit-scrollbar {
@@ -28,12 +29,12 @@
     }
 
     .blog-section .blog-card {
-        grid-column: auto !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        max-width: none !important;
+        flex: 0 0 86% !important;
+        width: 86% !important;
+        min-width: 86% !important;
+        max-width: 86% !important;
         margin: 0 !important;
         scroll-snap-align: start !important;
+        box-sizing: border-box !important;
     }
 }
