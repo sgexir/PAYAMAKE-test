@@ -239,7 +239,23 @@
     }
 
     .blog-grid {
-        grid-template-columns:1fr;
+        display:flex;
+        gap:18px;
+        overflow-x:auto;
+        overflow-y:hidden;
+        scroll-snap-type:x mandatory;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+        padding:0 4px 10px;
+    }
+
+    .blog-grid::-webkit-scrollbar {
+        display:none;
+    }
+
+    .blog-card {
+        flex:0 0 86%;
+        scroll-snap-align:start;
     }
 
     .blog-card-content {
