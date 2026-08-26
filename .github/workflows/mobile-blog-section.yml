@@ -1,0 +1,199 @@
+name: Apply mobile blog section
+
+on:
+  push:
+    branches:
+      - fix/mobile-blog-section
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Patch homepage
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          index = Path('index.html')
+          text = index.read_text(encoding='utf-8')
+
+          marker = '    <section class="mobile-blog-section"'
+          if marker not in text:
+              section = '''
+<section class="mobile-blog-section" aria-labelledby="mobileBlogTitle">
+  <div class="container">
+    <div class="section-title mobile-blog-section-title">
+      <span class="mobile-blog-eyebrow">PAYAMAKE BLOG</span>
+      <h2 id="mobileBlogTitle">آخرین مقالات</h2>
+      <p>مطالب کاربردی برای استفاده بهتر از بازاریابی پیامکی</p>
+    </div>
+
+    <div class="mobile-blog-grid">
+      <article class="mobile-blog-card">
+        <img src="assets/images/articles/sms-marketing-guide/sms-marketing-02.webp" alt="بازاریابی پیامکی چیست؟" width="1359" height="726" loading="lazy" decoding="async">
+        <div class="mobile-blog-card-content">
+          <span>بازاریابی پیامکی</span>
+          <h3>بازاریابی پیامکی چیست؟ راهنمای اجرای کمپین هدفمند</h3>
+          <a href="blog/sms-marketing-guide/">مطالعه مقاله</a>
+        </div>
+      </article>
+
+      <article class="mobile-blog-card">
+        <img src="assets/images/articles/best-time-to-send-promotional-sms/best-time-01.webp" alt="بهترین زمان ارسال پیامک تبلیغاتی" width="1359" height="726" loading="lazy" decoding="async">
+        <div class="mobile-blog-card-content">
+          <span>تبلیغات پیامکی</span>
+          <h3>بهترین زمان ارسال پیامک تبلیغاتی | راهنمای زمان‌بندی</h3>
+          <a href="blog/best-time-to-send-promotional-sms/">مطالعه مقاله</a>
+        </div>
+      </article>
+
+      <article class="mobile-blog-card">
+        <img src="assets/images/articles/how-to-write-promotional-sms/promotional-sms-copy-01.webp" alt="چطور متن پیامک تبلیغاتی بنویسیم" width="1359" height="726" loading="lazy" decoding="async">
+        <div class="mobile-blog-card-content">
+          <span>تبلیغات پیامکی</span>
+          <h3>چطور متن پیامک تبلیغاتی بنویسیم؟ راهنمای نوشتن پیامک پرفروش</h3>
+          <a href="blog/how-to-write-promotional-sms/">مطالعه مقاله</a>
+        </div>
+      </article>
+    </div>
+
+    <div class="mobile-blog-more">
+      <a href="blog/" class="secondary-button">مشاهده همه مقالات</a>
+    </div>
+  </div>
+</section>
+'''
+              if '</main>' not in text:
+                  raise SystemExit('Could not find </main> in index.html')
+              text = text.replace('</main>', section + '\n</main>', 1)
+              index.write_text(text, encoding='utf-8')
+
+          css = Path('css/style.css')
+          css_text = css.read_text(encoding='utf-8')
+          css_marker = '/* MOBILE BLOG SECTION */'
+          if css_marker not in css_text:
+              css_block = '''
+
+/* MOBILE BLOG SECTION */
+.mobile-blog-section {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .mobile-blog-section {
+        display: block;
+        padding: 72px 0 82px;
+        background: #f8fafc;
+    }
+
+    .mobile-blog-section-title {
+        margin-bottom: 28px;
+    }
+
+    .mobile-blog-eyebrow {
+        display: inline-block;
+        margin-bottom: 10px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+    }
+
+    .mobile-blog-section-title h2 {
+        margin-bottom: 10px;
+    }
+
+    .mobile-blog-section-title p {
+        font-size: 14px;
+        line-height: 1.9;
+    }
+
+    .mobile-blog-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .mobile-blog-card {
+        min-width: 0;
+        overflow: hidden;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .mobile-blog-card img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1.85 / 1;
+        object-fit: cover;
+    }
+
+    .mobile-blog-card-content {
+        padding: 20px;
+    }
+
+    .mobile-blog-card-content > span {
+        display: inline-block;
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .mobile-blog-card h3 {
+        margin: 0 0 14px;
+        color: var(--primary);
+        font-size: 18px;
+        line-height: 1.75;
+        font-weight: 800;
+    }
+
+    .mobile-blog-card a {
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .mobile-blog-card a:hover {
+        color: var(--accent);
+    }
+
+    .mobile-blog-more {
+        margin-top: 24px;
+        text-align: center;
+    }
+
+    .mobile-blog-more .secondary-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 22px;
+        text-decoration: none;
+    }
+}
+'''
+              css.write_text(css_text.rstrip() + css_block + '\n', encoding='utf-8')
+          PY
+
+      - name: Commit changes and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/mobile-blog-section.yml
+          git add -- index.html css/style.css
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: show blog section on mobile homepage"
+          git push
