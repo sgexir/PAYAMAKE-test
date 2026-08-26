@@ -243,13 +243,6 @@ async function verifyMfaSetup(request, env) {
   const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || null;
   const userAgent = request.headers.get("User-Agent") || null;
 
-  if (await isMfaRateLimited(env.DB, preauth.adminId, ip)) {
-    await recordLoginAttempt(env.DB, preauth.adminId, null, ip, userAgent, "locked", false, "mfa_rate_limited");
-    return json({
-      success: false,
-      error: "تعداد تلاش‌های احراز هویت دومرحله‌ای بیش از حد مجاز است. کمی بعد دوباره تلاش کنید."
-    }, 429);
-  }
 
   const method = await env.DB.prepare(
     `SELECT id, admin_id, method_type, secret_encrypted, is_verified
@@ -335,20 +328,6 @@ async function sendMfaOtp(request, env) {
   const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || null;
   const userAgent = request.headers.get("User-Agent") || null;
 
-  if (await isMfaRateLimited(env.DB, preauth.adminId, ip)) {
-    await recordLoginAttempt(env.DB, preauth.adminId, null, ip, userAgent, "locked", false, "mfa_rate_limited");
-    return json({
-      success: false,
-      error: "تعداد تلاش‌های احراز هویت دومرحله‌ای بیش از حد مجاز است. کمی بعد دوباره تلاش کنید."
-    }, 429);
-  }
-
-  const method = await env.DB.prepare(
-    `SELECT id, admin_id, method_type, destination_masked
-     FROM mfa_methods
-     WHERE id = ? AND admin_id = ? AND is_enabled = 1 AND is_verified = 1
-     LIMIT 1`
-  ).bind(Number(body.methodId), preauth.adminId).first();
 
   if (!method) return json({ success: false, error: "روش احراز هویت معتبر نیست." }, 400);
   if (method.method_type === "totp") {
@@ -400,13 +379,14 @@ async function verifyMfa(request, env) {
   const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || null;
   const userAgent = request.headers.get("User-Agent") || null;
 
-  if (await isMfaRateLimited(env.DB, preauth.adminId, ip)) {
+  if (await isMfaRateLimited(env.DB, preauth.adminId)) {
     await recordLoginAttempt(env.DB, preauth.adminId, null, ip, userAgent, "locked", false, "mfa_rate_limited");
     return json({
       success: false,
       error: "تعداد تلاش‌های احراز هویت دومرحله‌ای بیش از حد مجاز است. کمی بعد دوباره تلاش کنید."
     }, 429);
   }
+
 
   const method = await env.DB.prepare(
     `SELECT id, admin_id, method_type
@@ -798,17 +778,18 @@ async function isRateLimited(db, email, ip) {
   return Number(row?.failures || 0) >= MAX_LOGIN_FAILURES;
 }
 
-async function isMfaRateLimited(db, adminId, ip) {
-  const cutoff = new Date(Date.now() - MFA_RATE_WINDOW_SECONDS * 1000).toISOString();
+
+
+async function isMfaRateLimited(db, adminId) {
+  const cutoff = new Date(Date.now() - MFA_RATE_WINDOW_SECONDS * 1000).toISOString().replace("T", " ").replace("Z", "");
   const row = await db.prepare(
     `SELECT COUNT(*) AS failures
      FROM login_attempts
      WHERE created_at >= ?
        AND stage = 'mfa_failed'
        AND success = 0
-       AND admin_id = ?
-       AND (? IS NULL OR ip_address = ?)`
-  ).bind(cutoff, adminId, ip, ip).first();
+       AND admin_id = ?`
+  ).bind(cutoff, adminId).first();
   return Number(row?.failures || 0) >= MAX_MFA_FAILURES;
 }
 
