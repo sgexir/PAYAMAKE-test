@@ -11,6 +11,101 @@
 
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/admin.css">
+
+    <style>
+        .mfa-methods {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mfa-method {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+            min-height: 92px;
+            padding: 16px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            border-radius: 14px;
+            background: #fff;
+            color: inherit;
+            text-align: right;
+            cursor: pointer;
+            transition:
+                border-color 0.18s ease,
+                background-color 0.18s ease,
+                box-shadow 0.18s ease,
+                transform 0.18s ease;
+        }
+
+        .mfa-method:hover {
+            transform: translateY(-1px);
+            border-color: rgba(0, 0, 0, 0.24);
+        }
+
+        .mfa-method.active {
+            border-color: #111827;
+            background: #f8fafc;
+            box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.08);
+        }
+
+        .mfa-method-icon {
+            display: grid;
+            flex: 0 0 40px;
+            width: 40px;
+            height: 40px;
+            place-items: center;
+            border-radius: 10px;
+            background: #f1f5f9;
+            font-size: 18px;
+        }
+
+        .mfa-method-content {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            gap: 5px;
+            padding-top: 1px;
+        }
+
+        .mfa-method-content strong {
+            font-size: 14px;
+        }
+
+        .mfa-method-content small {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .mfa-method-check {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            display: none;
+            width: 20px;
+            height: 20px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #111827;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .mfa-method.active .mfa-method-check {
+            display: flex;
+        }
+
+        @media (max-width: 520px) {
+            .mfa-methods {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body class="admin-body">
@@ -28,7 +123,7 @@
             <h1>تأیید ورود</h1>
 
             <p>
-                برای تکمیل ورود، کد احراز هویت خود را وارد کنید.
+                روش احراز هویت موردنظر خود را انتخاب کنید.
             </p>
         </div>
 
@@ -53,19 +148,21 @@
             <div
                 id="mfaMethods"
                 class="mfa-methods"
+                aria-label="روش احراز هویت"
             ></div>
 
             <div class="form-group">
-                <label for="mfaCode">
-                    کد احراز هویت
+                <label id="mfaCodeLabel" for="mfaCode">
+                    کد Google Authenticator
                 </label>
 
-                                <input
+                <input
                     id="mfaCode"
                     name="code"
                     type="text"
                     autocomplete="one-time-code"
-                    maxlength="9"
+                    inputmode="numeric"
+                    maxlength="6"
                     placeholder="000000"
                     dir="ltr"
                     required
@@ -75,8 +172,7 @@
                     id="recoveryCodeHint"
                     class="form-hint"
                 >
-                    کد ۶ رقمی Google Authenticator یا کد بازیابی
-                    مانند XXXX-XXXX را وارد کنید.
+                    کد ۶ رقمی نمایش‌داده‌شده در Google Authenticator را وارد کنید.
                 </p>
             </div>
 
@@ -108,6 +204,115 @@
 </main>
 
 <script src="../js/admin.js"></script>
+
+<script>
+(function initMfaMethodCards() {
+    function setup() {
+        const container = document.getElementById("mfaMethods");
+        const methodIdInput = document.getElementById("mfaMethodId");
+        const codeInput = document.getElementById("mfaCode");
+        const codeLabel = document.getElementById("mfaCodeLabel");
+        const hint = document.getElementById("recoveryCodeHint");
+        const message = document.getElementById("mfaMessage");
+
+        if (!container || !methodIdInput || !codeInput || !codeLabel || !hint || !message) {
+            return false;
+        }
+
+        const authenticatorCard = container.querySelector('[data-method-id]');
+        if (!authenticatorCard) {
+            return false;
+        }
+
+        const methodId = authenticatorCard.dataset.methodId;
+        if (!methodId) {
+            return false;
+        }
+
+        const existingContent = authenticatorCard.querySelector(".mfa-method-content");
+        const authenticatorTitle = existingContent?.querySelector("strong")?.textContent?.trim() || "Google Authenticator";
+
+        authenticatorCard.innerHTML = `
+            <span class="mfa-method-icon" aria-hidden="true">⌁</span>
+            <span class="mfa-method-content">
+                <strong>${authenticatorTitle}</strong>
+                <small>کد ۶ رقمی از اپلیکیشن Authenticator</small>
+            </span>
+            <span class="mfa-method-check" aria-hidden="true">✓</span>
+        `;
+        authenticatorCard.setAttribute("aria-label", "ورود با Google Authenticator");
+
+        const recoveryCard = document.createElement("button");
+        recoveryCard.type = "button";
+        recoveryCard.className = "mfa-method";
+        recoveryCard.dataset.methodId = methodId;
+        recoveryCard.setAttribute("aria-label", "ورود با کد بازیابی");
+        recoveryCard.innerHTML = `
+            <span class="mfa-method-icon" aria-hidden="true">⌘</span>
+            <span class="mfa-method-content">
+                <strong>کد بازیابی</strong>
+                <small>کد یک‌بارمصرف XXXX-XXXX</small>
+            </span>
+            <span class="mfa-method-check" aria-hidden="true">✓</span>
+        `;
+
+        container.appendChild(recoveryCard);
+
+        function setMode(mode) {
+            const recovery = mode === "recovery";
+            authenticatorCard.classList.toggle("active", !recovery);
+            recoveryCard.classList.toggle("active", recovery);
+
+            methodIdInput.value = methodId;
+            sessionStorage.setItem("payamake_mfa_method_id", methodId);
+
+            if (recovery) {
+                codeLabel.textContent = "کد بازیابی";
+                codeInput.type = "text";
+                codeInput.inputMode = "text";
+                codeInput.autocomplete = "off";
+                codeInput.maxLength = 9;
+                codeInput.placeholder = "XXXX-XXXX";
+                hint.textContent = "کد بازیابی یک‌بارمصرف خود را وارد کنید.";
+            } else {
+                codeLabel.textContent = "کد Google Authenticator";
+                codeInput.type = "text";
+                codeInput.inputMode = "numeric";
+                codeInput.autocomplete = "one-time-code";
+                codeInput.maxLength = 6;
+                codeInput.placeholder = "000000";
+                hint.textContent = "کد ۶ رقمی نمایش‌داده‌شده در Google Authenticator را وارد کنید.";
+            }
+
+            codeInput.value = "";
+            codeInput.focus();
+            message.textContent = "";
+            message.className = "form-message";
+        }
+
+        authenticatorCard.addEventListener("click", () => setMode("totp"));
+        recoveryCard.addEventListener("click", () => setMode("recovery"));
+
+        setMode("totp");
+        return true;
+    }
+
+    if (!setup()) {
+        const observer = new MutationObserver(() => {
+            if (setup()) {
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(document.getElementById("mfaMethods") || document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        setTimeout(() => observer.disconnect(), 5000);
+    }
+})();
+</script>
 
 </body>
 </html>
