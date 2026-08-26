@@ -12,6 +12,10 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }
 
+    if (!url.pathname.startsWith("/api/")) {
+      return env.ASSETS.fetch(request);
+    }
+
     if (url.pathname.startsWith("/api/admin/")) {
       const response = await handleAdminAuth(request, env);
       return withCors(response, origin);
