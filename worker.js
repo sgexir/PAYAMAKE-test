@@ -62,8 +62,17 @@ export default {
       if (!leadId) return jsonResponse({ success: false, error: "ذخیره درخواست انجام نشد." }, 500, origin);
 
       const provider = await getDefaultSmsProvider(env.DB);
-      const customerTemplate = await getSmsTemplate(env.DB, provider.id, "lead_customer");
-      const adminTemplate = await getSmsTemplate(env.DB, provider.id, "lead_admin");
+      const customerTemplate = (await getSmsTemplate(env.DB, provider.id, "lead_customer")) || {};
+      const adminTemplate = (await getSmsTemplate(env.DB, provider.id, "lead_admin")) || {};
+
+      if (provider.key === "sms_ir") {
+        customerTemplate.template_id = customerTemplate.template_id || env.SMSIR_CUSTOMER_TEMPLATE_ID || null;
+        adminTemplate.template_id = adminTemplate.template_id || env.SMSIR_ADMIN_TEMPLATE_ID || null;
+      }
+      if (provider.key === "niazpardaz") {
+        customerTemplate.message_template = customerTemplate.message_template || env.NIAZPARDAZ_CUSTOMER_MESSAGE || null;
+        adminTemplate.message_template = adminTemplate.message_template || env.NIAZPARDAZ_ADMIN_MESSAGE || null;
+      }
 
       const customerResult = await sendLeadSms({
         env,
