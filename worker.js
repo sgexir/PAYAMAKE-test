@@ -129,9 +129,18 @@ export default {
     ).all();
 
     for (const log of pending.results || []) {
-      ctx.waitUntil(refreshSmsDelivery({ env, db: env.DB, log }).catch((error) => {
-        console.error("SMS delivery refresh error:", { logId: log.id, error: error instanceof Error ? error.message : error });
-      }));
+      ctx.waitUntil(
+        refreshSmsDelivery({ env, db: env.DB, log })
+          .then((result) => {
+            if (!result?.deliveryStatus || !log.lead_id) return;
+            const column = log.purpose === "lead_customer" ? "customer_sms_status" : log.purpose === "lead_admin" ? "admin_sms_status" : null;
+            if (!column) return;
+            return updateLeadSmsStatus(env.DB, log.lead_id, column, result.deliveryStatus === "delivered" ? "delivered" : result.deliveryStatus === "failed" ? "failed" : "sent");
+          })
+          .catch((error) => {
+            console.error("SMS delivery refresh error:", { logId: log.id, error: error instanceof Error ? error.message : error });
+          })
+      );
     }
   },
 };
