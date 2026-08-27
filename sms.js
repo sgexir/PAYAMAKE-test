@@ -191,12 +191,8 @@ export async function refreshSmsDelivery({ env, db, log }) {
   const provider = await db.prepare(`SELECT * FROM sms_providers WHERE id = ? LIMIT 1`).bind(log.provider_id).first();
   if (!provider) throw new Error("Provider مربوط به SMS پیدا نشد.");
 
-  if (provider.key === "niazpardaz") {
-    return refreshNiazpardazDelivery(env, db, log);
-  }
-  if (provider.key === "sms_ir") {
-    return refreshSmsIrDelivery(env, db, log);
-  }
+  if (provider.key === "niazpardaz") return refreshNiazpardazDelivery(env, db, log);
+  if (provider.key === "sms_ir") return refreshSmsIrDelivery(env, db, log);
   throw new Error(`Provider ناشناخته: ${provider.key}`);
 }
 
@@ -243,11 +239,11 @@ async function refreshSmsIrDelivery(env, db, log) {
   const deliveryStatus = mapSmsIrDeliveryState(state);
   await updateSmsLog(db, log.id, {
     delivery_status: deliveryStatus,
-    provider_code: data?.status === undefined ? null : String(data.status),
+    provider_code: state === null || state === undefined ? null : String(state),
     provider_response: data,
     delivered_at: deliveryStatus === "delivered" ? new Date().toISOString() : null,
   });
-  return { success: true, deliveryStatus, data };
+  return { success: true, deliveryStatus, providerCode: state, data };
 }
 
 function mapNiazDeliveryStatus(code) {
@@ -258,11 +254,15 @@ function mapNiazDeliveryStatus(code) {
 }
 
 function mapSmsIrDeliveryState(value) {
-  if (value === null || value === undefined) return "unknown";
-  const normalized = String(value).toLowerCase();
-  if (["delivered", "delivery", "2", "3", "success"].includes(normalized)) return "delivered";
-  if (["failed", "notdelivered", "rejected", "error", "4", "5"].includes(normalized)) return "failed";
-  if (["pending", "queued", "sent", "inqueue", "1"].includes(normalized)) return "pending";
+  const code = Number(value);
+  if (code === 1) return "delivered";
+  if ([2, 4, 6, 7].includes(code)) return "failed";
+  if ([3, 5].includes(code)) return "pending";
+  if (code === 8) return "unknown";
+  const normalized = String(value ?? "").toLowerCase();
+  if (["delivered", "delivery", "success"].includes(normalized)) return "delivered";
+  if (["failed", "notdelivered", "rejected", "error"].includes(normalized)) return "failed";
+  if (["pending", "queued", "sent", "inqueue"].includes(normalized)) return "pending";
   return "unknown";
 }
 
