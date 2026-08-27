@@ -55,6 +55,7 @@
   </div>
 </main>
 <script src="../js/admin.js"></script>
+<script>document.addEventListener('DOMContentLoaded',()=>{fetch('/api/admin/me',{credentials:'include'}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{document.body.classList.remove('admin-auth-pending');if(d.admin)document.getElementById('adminName').textContent=d.admin.fullName||d.admin.email;}).catch(()=>{location.href='/admin/login.html';});document.getElementById('logoutButton').addEventListener('click',async()=>{await fetch('/api/admin/logout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:'{}'}).catch(()=>{});location.href='/admin/login.html';});});</script>
 <script src="../js/admin-sms.js"></script>
 </body>
 </html>
