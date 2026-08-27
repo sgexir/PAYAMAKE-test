@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پنل مدیریت | PAYAMAKE</title>
+    <title>مرکز کنترل مدیریت | PAYAMAKE</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/admin-sms.css">
 </head>
 <body class="admin-body admin-auth-pending">
 
 <header class="admin-header">
     <div class="admin-container">
-        <a href="../" class="admin-logo"><strong>PAYAMAKE</strong><span>پنل مدیریت</span></a>
+        <a href="../" class="admin-logo"><strong>PAYAMAKE</strong><span>مرکز کنترل مدیریت</span></a>
         <div class="admin-header-actions"><span id="adminName" class="admin-user">در حال بررسی...</span><button id="logoutButton" class="logout-button" type="button">خروج</button></div>
     </div>
 </header>
@@ -19,9 +20,9 @@
 <main class="admin-main">
     <div class="admin-container">
         <section class="dashboard-welcome">
-            <span class="eyebrow">مدیریت PAYAMAKE</span>
-            <h1>خوش آمدید</h1>
-            <p>از این بخش می‌توانید مدیریت سرویس و درخواست‌های مشتریان را انجام دهید.</p>
+            <span class="eyebrow">ADMIN CONTROL CENTER</span>
+            <h1>مرکز کنترل مدیریت</h1>
+            <p>مدیریت سرویس، درخواست‌های مشتریان، پیامک و وضعیت امنیت را از یک صفحه انجام دهید.</p>
         </section>
 
         <section class="dashboard-grid">
@@ -31,18 +32,79 @@
         </section>
 
         <section class="dashboard-section">
-            <div class="section-heading"><h2>بخش‌های مدیریت</h2></div>
+            <div class="section-heading"><h2>مرکز کنترل</h2><span>همه بخش‌های اصلی در همین صفحه</span></div>
             <div class="feature-grid">
-                <button class="feature-card" type="button"><div class="feature-icon">▣</div><div><strong>درخواست‌های مشاوره</strong><small>مشاهده و مدیریت درخواست‌های مشتریان</small></div></button>
-                <a class="feature-card" href="/admin/sms.html"><div class="feature-icon">▤</div><div><strong>پیامک‌ها</strong><small>Providerها، Templateها، وضعیت ارسال و Delivery Log</small></div></a>
-                <button class="feature-card" type="button"><div class="feature-icon">◈</div><div><strong>محتوا</strong><small>مدیریت محتوای سایت و مقالات</small></div></button>
-                <button class="feature-card" type="button"><div class="feature-icon">⚙</div><div><strong>تنظیمات</strong><small>تنظیمات حساب و امنیت</small></div></button>
+                <button class="feature-card" type="button" data-section-target="leads"><div class="feature-icon">▣</div><div><strong>درخواست‌های مشاوره</strong><small>مشاهده و مدیریت درخواست‌های مشتریان</small></div></button>
+                <button class="feature-card" type="button" data-section-target="sms"><div class="feature-icon">▤</div><div><strong>پیامک‌ها</strong><small>Providerها، قالب‌ها، وضعیت ارسال و لاگ‌ها</small></div></button>
+                <button class="feature-card" type="button" data-section-target="security"><div class="feature-icon">◈</div><div><strong>امنیت</strong><small>رویدادها، نشست‌ها و وضعیت دسترسی</small></div></button>
+                <button class="feature-card" type="button" data-section-target="analytics"><div class="feature-icon">◫</div><div><strong>تحلیل و SEO</strong><small>آمار، وضعیت سایت و شاخص‌های مهم</small></div></button>
             </div>
+        </section>
+
+        <section id="leads" class="dashboard-section control-section">
+            <div class="section-heading"><h2>درخواست‌های مشاوره</h2><span>نمای سریع</span></div>
+            <div class="sms-empty">بخش مدیریت Leads در همین مرکز کنترل در مرحله بعد تکمیل می‌شود.</div>
+        </section>
+
+        <section id="sms" class="dashboard-section control-section sms-control-section">
+            <div class="admin-page-heading compact-heading">
+                <div><span class="eyebrow">SMS CONTROL CENTER</span><h2>مدیریت پیامک‌ها</h2><p>Providerها، قالب‌ها و ارسال‌ها بدون خروج از مرکز کنترل.</p></div>
+            </div>
+
+            <div id="smsMessage" class="form-message"></div>
+
+            <nav class="sms-tabs" aria-label="بخش‌های پیامک">
+                <button class="sms-tab active" data-tab="overview" type="button">نمای کلی</button>
+                <button class="sms-tab" data-tab="providers" type="button">Providerها</button>
+                <button class="sms-tab" data-tab="templates" type="button">قالب‌ها</button>
+                <button class="sms-tab" data-tab="logs" type="button">لاگ‌ها</button>
+            </nav>
+
+            <section class="sms-panel active" data-panel="overview">
+                <div class="sms-stats" id="smsStats"></div>
+                <div class="sms-section-card"><div class="sms-section-title"><h3>Providerها</h3><span>وضعیت تنظیمات</span></div><div id="providerSummary" class="provider-grid"></div></div>
+                <div class="sms-section-card"><div class="sms-section-title"><h3>آخرین ارسال‌ها</h3><button class="text-button" data-go-tab="logs" type="button">مشاهده همه</button></div><div id="recentLogs" class="table-wrap"></div></div>
+            </section>
+
+            <section class="sms-panel" data-panel="providers">
+                <div class="sms-section-card"><div class="sms-section-title"><h3>Providerهای مستقل</h3><span>هر Provider تنظیمات اختصاصی خود را دارد.</span></div><div id="providersList" class="provider-grid"></div></div>
+            </section>
+
+            <section class="sms-panel" data-panel="templates">
+                <div class="sms-section-card"><div class="sms-section-title"><h3>قالب‌های پیامک</h3><span>تنظیمات هر Provider مستقل است.</span></div><div id="templatesList" class="template-list"></div></div>
+            </section>
+
+            <section class="sms-panel" data-panel="logs">
+                <div class="sms-section-card">
+                    <div class="sms-section-title"><h3>SMS Logs</h3><span>Source of Truth ارسال و Delivery</span></div>
+                    <div class="log-filters"><select id="logProvider"><option value="">همه Providerها</option><option value="niazpardaz">Niazpardaz</option><option value="sms_ir">SMS.ir</option></select><select id="logStatus"><option value="">همه وضعیت‌ها</option><option value="sent">ارسال شده</option><option value="failed">ناموفق</option><option value="delivered">دلیور شده</option><option value="pending">در انتظار دلیوری</option></select><button id="refreshLogs" class="admin-button primary small" type="button">بروزرسانی</button></div>
+                    <div id="logsTable" class="table-wrap"></div>
+                </div>
+            </section>
+        </section>
+
+        <section id="security" class="dashboard-section control-section">
+            <div class="section-heading"><h2>امنیت</h2><span>وضعیت فعلی</span></div>
+            <div class="dashboard-grid"><article class="dashboard-card"><div class="card-icon">✓</div><div><span class="card-label">Session</span><strong>فعال</strong></div></article><article class="dashboard-card"><div class="card-icon">۲</div><div><span class="card-label">MFA</span><strong>فعال</strong></div></article></div>
+            <div class="sms-empty">بخش جزئیات رویدادهای امنیتی، نشست‌ها و IPها در مرحله بعد تکمیل می‌شود.</div>
+        </section>
+
+        <section id="analytics" class="dashboard-section control-section">
+            <div class="section-heading"><h2>تحلیل و SEO</h2><span>مرکز گزارش</span></div>
+            <div class="feature-grid"><div class="feature-card"><div class="feature-icon">◫</div><div><strong>Analytics</strong><small>داشبورد تجمیعی آمار در مرحله بعد متصل می‌شود.</small></div></div><div class="feature-card"><div class="feature-icon">⌕</div><div><strong>SEO</strong><small>شاخص‌های SEO و Search Console در مرحله بعد اضافه می‌شوند.</small></div></div></div>
         </section>
 
         <section class="security-notice"><div class="security-icon">✓</div><div><strong>اتصال امن برقرار است</strong><p>نشست مدیریت با کوکی امن و HttpOnly محافظت می‌شود.</p></div></section>
     </div>
 </main>
 <script src="../js/admin.js"></script>
+<script src="../js/admin-sms.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-section-target]').forEach((button) => {
+        button.addEventListener('click', () => document.getElementById(button.dataset.sectionTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    });
+});
+</script>
 </body>
 </html>
