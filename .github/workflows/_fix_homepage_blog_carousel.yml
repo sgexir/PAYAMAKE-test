@@ -1,28 +1,36 @@
-name: Temporary homepage blog carousel fix
+name: Fix homepage mobile blog carousel
+
 on:
   push:
     branches:
       - main
+
 permissions:
   contents: write
+
 jobs:
-  fix:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - name: Fix homepage mobile blog carousel CSS
+          fetch-depth: 1
+
+      - name: Patch homepage
+        shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
+
+          index = Path('index.html')
+          text = index.read_text(encoding='utf-8')
+
           old = '''    .mobile-blog-grid {
         display: grid;
         grid-template-columns: 1fr;
         gap: 18px;
     }'''
+
           new = '''    .mobile-blog-grid {
         display: flex;
         flex-direction: row;
@@ -42,10 +50,16 @@ jobs:
         padding: 0 4px 12px;
         box-sizing: border-box;
     }
-    .mobile-blog-grid::-webkit-scrollbar { display: none; }'''
-          if old not in s:
-              raise SystemExit('Expected homepage mobile blog CSS block was not found')
-          s = s.replace(old, new, 1)
+
+    .mobile-blog-grid::-webkit-scrollbar {
+        display: none;
+    }'''
+
+          if old not in text:
+              raise SystemExit('Expected mobile blog grid CSS block was not found')
+
+          text = text.replace(old, new, 1)
+
           marker = '''    .mobile-blog-card {
         min-width: 0;'''
           replacement = '''    .mobile-blog-card {
@@ -54,17 +68,23 @@ jobs:
         min-width: 86%;
         max-width: 86%;
         scroll-snap-align: start;'''
-          if marker not in s:
-              raise SystemExit('Expected mobile blog card block was not found')
-          s = s.replace(marker, replacement, 1)
-          p.write_text(s, encoding='utf-8')
+
+          if marker not in text:
+              raise SystemExit('Expected mobile blog card CSS block was not found')
+
+          text = text.replace(marker, replacement, 1)
+          index.write_text(text, encoding='utf-8')
           PY
-      - name: Commit fix and remove temporary workflow
+
+      - name: Commit changes and remove temporary workflow
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add -- index.html
+          git diff --cached --quiet && exit 0
           git commit -m "fix: homepage mobile blog carousel"
-          git rm .github/workflows/_fix_homepage_blog_carousel.yml
+          git rm -f .github/workflows/_fix_homepage_blog_carousel.yml
+          git add -- .github/workflows/_fix_homepage_blog_carousel.yml
           git commit -m "chore: remove temporary carousel fixer"
           git push
