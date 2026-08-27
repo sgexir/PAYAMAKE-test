@@ -1,6 +1,6 @@
 import { handleAdminAuth } from "./auth.js";
+import { getDefaultSmsProvider, getSmsTemplate, sendLeadSms, refreshSmsDelivery } from "./sms.js";
 
-const SMSIR_VERIFY_URL = "https://api.sms.ir/v1/send/verify";
 const ALLOWED_ORIGIN = "https://staging.payamake.ir";
 
 export default {
@@ -26,10 +26,7 @@ export default {
     }
 
     try {
-      if (!env.SMSIR_API_KEY) return jsonResponse({ success: false, error: "SMSIR_API_KEY تنظیم نشده است." }, 500, origin);
       if (!env.ADMIN_MOBILE) return jsonResponse({ success: false, error: "ADMIN_MOBILE تنظیم نشده است." }, 500, origin);
-      if (!env.SMSIR_CUSTOMER_TEMPLATE_ID) return jsonResponse({ success: false, error: "SMSIR_CUSTOMER_TEMPLATE_ID تنظیم نشده است." }, 500, origin);
-      if (!env.SMSIR_ADMIN_TEMPLATE_ID) return jsonResponse({ success: false, error: "SMSIR_ADMIN_TEMPLATE_ID تنظیم نشده است." }, 500, origin);
       if (!env.DB) return jsonResponse({ success: false, error: "اتصال D1 با نام DB تنظیم نشده است." }, 500, origin);
 
       let body;
@@ -64,62 +61,91 @@ export default {
       const leadId = insertResult.meta?.last_row_id;
       if (!leadId) return jsonResponse({ success: false, error: "ذخیره درخواست انجام نشد." }, 500, origin);
 
-      let customerResult;
-      try {
-        customerResult = await sendVerifySMS({ apiKey: env.SMSIR_API_KEY, mobile: normalizedPhone, templateId: Number(env.SMSIR_CUSTOMER_TEMPLATE_ID), parameters: [{ name: "FULLNAME", value: safeFullName }] });
-      } catch (error) {
-        console.error("Customer SMS error:", error);
-        customerResult = { success: false, status: 0, data: { error: error instanceof Error ? error.message : "خطای ارسال پیامک مشتری" } };
-      }
-      await updateSmsStatus(env.DB, leadId, "customer_sms_status", customerResult.success ? "sent" : "failed");
+      const provider = await getDefaultSmsProvider(env.DB);
+      const customerTemplate = (await getSmsTemplate(env.DB, provider.id, "lead_customer")) || {};
+      const adminTemplate = (await getSmsTemplate(env.DB, provider.id, "lead_admin")) || {};
 
-      let adminResult;
-      try {
-        adminResult = await sendVerifySMS({
-          apiKey: env.SMSIR_API_KEY,
-          mobile: adminMobile,
-          templateId: Number(env.SMSIR_ADMIN_TEMPLATE_ID),
-          parameters: [
-            { name: "FULLNAME", value: safeFullName },
-            { name: "PHONE", value: normalizedPhone },
-            { name: "BRAND", value: safeBrand },
-            { name: "TYPE", value: safeType },
-            { name: "DESCRIPTION", value: safeDescription },
-          ],
-        });
-      } catch (error) {
-        console.error("Admin SMS error:", error);
-        adminResult = { success: false, status: 0, data: { error: error instanceof Error ? error.message : "خطای ارسال پیامک مدیر" } };
+      if (provider.key === "sms_ir") {
+        customerTemplate.template_id = customerTemplate.template_id || env.SMSIR_CUSTOMER_TEMPLATE_ID || null;
+        adminTemplate.template_id = adminTemplate.template_id || env.SMSIR_ADMIN_TEMPLATE_ID || null;
       }
-      await updateSmsStatus(env.DB, leadId, "admin_sms_status", adminResult.success ? "sent" : "failed");
+      if (provider.key === "niazpardaz") {
+        customerTemplate.message_template = customerTemplate.message_template || env.NIAZPARDAZ_CUSTOMER_MESSAGE || null;
+        adminTemplate.message_template = adminTemplate.message_template || env.NIAZPARDAZ_ADMIN_MESSAGE || null;
+      }
+
+      const customerResult = await sendLeadSms({
+        env,
+        db: env.DB,
+        provider,
+        template: customerTemplate,
+        leadId,
+        purpose: "lead_customer",
+        recipient: normalizedPhone,
+        parameters: [{ name: "FULLNAME", value: safeFullName }],
+      });
+      await updateLeadSmsStatus(env.DB, leadId, "customer_sms_status", customerResult.success ? "sent" : "failed");
+
+      const adminResult = await sendLeadSms({
+        env,
+        db: env.DB,
+        provider,
+        template: adminTemplate,
+        leadId,
+        purpose: "lead_admin",
+        recipient: adminMobile,
+        parameters: [
+          { name: "FULLNAME", value: safeFullName },
+          { name: "PHONE", value: normalizedPhone },
+          { name: "BRAND", value: safeBrand },
+          { name: "TYPE", value: safeType },
+          { name: "DESCRIPTION", value: safeDescription },
+        ],
+      });
+      await updateLeadSmsStatus(env.DB, leadId, "admin_sms_status", adminResult.success ? "sent" : "failed");
 
       return jsonResponse({
         success: customerResult.success && adminResult.success,
         leadId,
-        customerSms: { sent: customerResult.success, status: customerResult.status },
-        adminSms: { sent: adminResult.success, status: adminResult.status },
+        provider: provider.key,
+        customerSms: { sent: customerResult.success, status: customerResult.status, logId: customerResult.logId },
+        adminSms: { sent: adminResult.success, status: adminResult.status, logId: adminResult.logId },
       }, 200, origin);
     } catch (error) {
       console.error("Worker error:", error);
       return jsonResponse({ success: false, error: error instanceof Error ? error.message : "خطای ناشناخته" }, 500, origin);
     }
   },
+
+  async scheduled(event, env, ctx) {
+    if (!env.DB) return;
+    const pending = await env.DB.prepare(
+      `SELECT id, provider_id, lead_id, purpose, recipient, provider_message_id
+       FROM sms_logs
+       WHERE send_status = 'sent' AND delivery_status = 'pending'
+         AND provider_message_id IS NOT NULL
+       ORDER BY created_at ASC
+       LIMIT 50`
+    ).all();
+
+    for (const log of pending.results || []) {
+      ctx.waitUntil(
+        refreshSmsDelivery({ env, db: env.DB, log })
+          .then((result) => {
+            if (!result?.deliveryStatus || !log.lead_id) return;
+            const column = log.purpose === "lead_customer" ? "customer_sms_status" : log.purpose === "lead_admin" ? "admin_sms_status" : null;
+            if (!column) return;
+            return updateLeadSmsStatus(env.DB, log.lead_id, column, result.deliveryStatus === "delivered" ? "delivered" : result.deliveryStatus === "failed" ? "failed" : "sent");
+          })
+          .catch((error) => {
+            console.error("SMS delivery refresh error:", { logId: log.id, error: error instanceof Error ? error.message : error });
+          })
+      );
+    }
+  },
 };
 
-async function sendVerifySMS({ apiKey, mobile, templateId, parameters }) {
-  const response = await fetch(SMSIR_VERIFY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json", "x-api-key": apiKey },
-    body: JSON.stringify({ mobile, templateId, parameters }),
-  });
-  const text = await response.text();
-  let data;
-  try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  console.log("SMS.ir response:", { status: response.status, data });
-  return { success: response.ok, status: response.status, data };
-}
-
-async function updateSmsStatus(db, leadId, column, status) {
+async function updateLeadSmsStatus(db, leadId, column, status) {
   const allowedColumns = ["customer_sms_status", "admin_sms_status"];
   if (!allowedColumns.includes(column)) throw new Error("Invalid SMS status column.");
   await db.prepare(`UPDATE leads SET ${column} = ? WHERE id = ?`).bind(status, leadId).run();
