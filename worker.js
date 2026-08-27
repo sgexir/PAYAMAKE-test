@@ -1,4 +1,5 @@
 import { handleAdminAuth } from "./auth.js";
+import { handleAdminApi } from "./admin-api.js";
 import { sendLeadSms, refreshPendingSmsDeliveries } from "./sms.js";
 
 const ALLOWED_ORIGIN = "https://staging.payamake.ir";
@@ -14,6 +15,11 @@ export default {
 
     if (!url.pathname.startsWith("/api/")) {
       return env.ASSETS.fetch(request);
+    }
+
+    if (url.pathname.startsWith("/api/admin/sms/")) {
+      const response = await handleAdminApi(request, env);
+      return withCors(response, origin);
     }
 
     if (url.pathname.startsWith("/api/admin/")) {
