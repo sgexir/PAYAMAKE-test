@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>پیامک‌ها | PAYAMAKE</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/admin-sms.css">
+</head>
+<body class="admin-body admin-auth-pending">
+<header class="admin-header">
+  <div class="admin-container">
+    <a href="/admin/" class="admin-logo"><strong>PAYAMAKE</strong><span>مرکز کنترل مدیریت</span></a>
+    <div class="admin-header-actions"><span id="adminName" class="admin-user">در حال بررسی...</span><button id="logoutButton" class="logout-button" type="button">خروج</button></div>
+  </div>
+</header>
+<main class="admin-main">
+  <div class="admin-container">
+    <div class="admin-page-heading">
+      <div><span class="eyebrow">SMS CONTROL CENTER</span><h1>مدیریت پیامک‌ها</h1><p>وضعیت Providerها، قالب‌ها و تمام ارسال‌ها را از یک محل بررسی و مدیریت کنید.</p></div>
+      <a class="admin-back-link" href="/admin/">بازگشت به داشبورد</a>
+    </div>
+
+    <div id="smsMessage" class="form-message"></div>
+
+    <nav class="sms-tabs" aria-label="بخش‌های پیامک">
+      <button class="sms-tab active" data-tab="overview">نمای کلی</button>
+      <button class="sms-tab" data-tab="providers">Providerها</button>
+      <button class="sms-tab" data-tab="templates">قالب‌ها</button>
+      <button class="sms-tab" data-tab="logs">لاگ‌ها</button>
+    </nav>
+
+    <section class="sms-panel active" data-panel="overview">
+      <div class="sms-stats" id="smsStats"></div>
+      <div class="sms-section-card"><div class="sms-section-title"><h2>Providerها</h2><span>وضعیت لحظه‌ای تنظیمات</span></div><div id="providerSummary" class="provider-grid"></div></div>
+      <div class="sms-section-card"><div class="sms-section-title"><h2>آخرین ارسال‌ها</h2><button class="text-button" data-go-tab="logs">مشاهده همه</button></div><div id="recentLogs" class="table-wrap"></div></div>
+    </section>
+
+    <section class="sms-panel" data-panel="providers">
+      <div class="sms-section-card"><div class="sms-section-title"><h2>Providerهای مستقل</h2><span>Niazpardaz به‌صورت پیش‌فرض فعال است.</span></div><div id="providersList" class="provider-grid"></div></div>
+    </section>
+
+    <section class="sms-panel" data-panel="templates">
+      <div class="sms-section-card"><div class="sms-section-title"><h2>قالب‌های پیامک</h2><span>تنظیمات هر Provider کاملاً مستقل است.</span></div><div id="templatesList" class="template-list"></div></div>
+    </section>
+
+    <section class="sms-panel" data-panel="logs">
+      <div class="sms-section-card">
+        <div class="sms-section-title"><h2>SMS Logs</h2><span>Source of Truth ارسال و Delivery</span></div>
+        <div class="log-filters"><select id="logProvider"><option value="">همه Providerها</option><option value="niazpardaz">Niazpardaz</option><option value="sms_ir">SMS.ir</option></select><select id="logStatus"><option value="">همه وضعیت‌ها</option><option value="sent">ارسال شده</option><option value="failed">ناموفق</option><option value="delivered">دلیور شده</option><option value="pending">در انتظار دلیوری</option></select><button id="refreshLogs" class="admin-button primary small">بروزرسانی</button></div>
+        <div id="logsTable" class="table-wrap"></div>
+      </div>
+    </section>
+  </div>
+</main>
+<script src="../js/admin.js"></script>
+<script src="../js/admin-sms.js"></script>
+</body>
+</html>
