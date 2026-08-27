@@ -16,5 +16,9 @@
       "database_name": "payamake-db-staging",
       "database_id": "abf3e568-c0ee-4efc-ac35-bfb6f8d9af1e"
     }
-  ]
+  ],
+
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  }
 }
