@@ -46,7 +46,7 @@
             <div class="sms-empty">بخش مدیریت Leads در همین مرکز کنترل در مرحله بعد تکمیل می‌شود.</div>
         </section>
 
-        <section id="sms" class="dashboard-section control-section sms-control-section">
+        <section id="sms" class="dashboard-section control-section sms-control-section is-active">
             <div class="admin-page-heading compact-heading">
                 <div><span class="eyebrow">SMS CONTROL CENTER</span><h2>مدیریت پیامک‌ها</h2><p>Providerها، قالب‌ها و ارسال‌ها بدون خروج از مرکز کنترل.</p></div>
             </div>
@@ -101,10 +101,32 @@
 <script src="../js/admin-sms.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('[data-section-target]').forEach((button) => {
-        button.addEventListener('click', () => document.getElementById(button.dataset.sectionTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    const sections = [...document.querySelectorAll('.control-section')];
+    const cards = [...document.querySelectorAll('[data-section-target]')];
+
+    const showSection = (name) => {
+        sections.forEach((section) => {
+            section.classList.toggle('is-active', section.id === name);
+        });
+        cards.forEach((card) => {
+            card.classList.toggle('is-selected', card.dataset.sectionTarget === name);
+        });
+    };
+
+    cards.forEach((button) => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            showSection(button.dataset.sectionTarget);
+        });
     });
+
+    showSection('sms');
 });
 </script>
+<style>
+.control-section { display: none; }
+.control-section.is-active { display: block; }
+.feature-card.is-selected { border-color: #2463eb; box-shadow: 0 0 0 3px rgba(36,99,235,.08); }
+</style>
 </body>
 </html>
