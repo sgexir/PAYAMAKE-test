@@ -4,6 +4,10 @@
   "main": "worker.js",
   "compatibility_date": "2026-08-25",
 
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+
   "assets": {
     "directory": ".",
     "binding": "ASSETS",
