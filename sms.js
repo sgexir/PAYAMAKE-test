@@ -3,16 +3,18 @@ const SMSIR_REPORT_URL = "https://api.sms.ir/v1/send/report/";
 const NIAZPARDAZ_BASE_URL = "https://login.niazpardaz.ir/api/v2/RestWebApi";
 
 export async function sendLeadSms({ env, db, leadId, recipient, purpose, parameters, message }) {
-  const providerKey = String(env.SMS_PROVIDER_DEFAULT || "niazpardaz").trim().toLowerCase();
+  const configuredProviderKey = String(env.SMS_PROVIDER_DEFAULT || "").trim().toLowerCase();
+  const providerKey = configuredProviderKey || await getDefaultProviderKey(db);
   const provider = await getProvider(db, providerKey);
   if (!provider || !provider.is_enabled) throw new Error(`SMS provider is not configured or disabled: ${providerKey}`);
 
   const template = await getTemplate(db, provider.id, purpose);
   const templateRef = template?.template_ref || getEnvTemplateRef(env, providerKey, purpose);
   const renderedMessage = renderTemplate(template?.message_text || message || "", parameters);
+  const sender = provider.sender_number || (providerKey === "niazpardaz" ? env.NIAZPARDAZ_SENDER_NUMBER || null : null);
   const logId = await createSmsLog(db, {
     providerId: provider.id, leadId, purpose, recipient,
-    sender: provider.sender_number || env.NIAZPARDAZ_SENDER_NUMBER || null,
+    sender,
     templateId: templateRef,
     message: renderedMessage,
   });
@@ -20,7 +22,7 @@ export async function sendLeadSms({ env, db, leadId, recipient, purpose, paramet
   try {
     const result = providerKey === "sms_ir"
       ? await sendSmsIr(env, recipient, templateRef, parameters)
-      : await sendNiazpardaz(env, recipient, provider.sender_number || env.NIAZPARDAZ_SENDER_NUMBER, renderedMessage);
+      : await sendNiazpardaz(env, recipient, sender, renderedMessage);
 
     await updateSmsLog(db, logId, {
       sendStatus: result.success ? "sent" : "failed",
@@ -72,6 +74,11 @@ export async function refreshPendingSmsDeliveries(env) {
     } catch (error) { console.error("SMS delivery refresh error:", row.id, error); }
   }
   return { checked: (rows.results || []).length, updated };
+}
+
+async function getDefaultProviderKey(db) {
+  const row = await db.prepare(`SELECT provider_key FROM sms_providers WHERE is_enabled = 1 ORDER BY is_default DESC, id ASC LIMIT 1`).first();
+  return String(row?.provider_key || "niazpardaz").trim().toLowerCase();
 }
 
 async function getProvider(db, providerKey) {
