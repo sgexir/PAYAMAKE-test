@@ -34,6 +34,90 @@
 .footer-contact-phone { font-size: 21px !important; }
 .footer-contact-phone::before { font-size: 18px; }
 }
+
+/* Mobile-only blog section: the desktop homepage remains unchanged. */
+.mobile-blog-section { display: none; }
+@media (max-width: 700px) {
+    .mobile-blog-section {
+        display: block;
+        padding: 72px 0 82px;
+        background: #f8fafc;
+    }
+    .mobile-blog-section-title { margin-bottom: 28px; }
+    .mobile-blog-eyebrow {
+        display: inline-block;
+        margin-bottom: 10px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+    }
+    .mobile-blog-section-title h2 { margin-bottom: 10px; }
+    .mobile-blog-section-title p { font-size: 14px; line-height: 1.9; }
+    .mobile-blog-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 18px;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        touch-action: pan-x;
+        padding: 0 0 10px;
+    }
+    .mobile-blog-grid::-webkit-scrollbar { display: none; }
+    .mobile-blog-card {
+        flex: 0 0 86% !important;
+        width: 86% !important;
+        min-width: 86% !important;
+        max-width: 86% !important;
+        overflow: hidden;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        scroll-snap-align: start;
+    }
+    .mobile-blog-card img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1.85 / 1;
+        object-fit: cover;
+    }
+    .mobile-blog-card-content { padding: 20px; }
+    .mobile-blog-card-content > span {
+        display: inline-block;
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+    }
+    .mobile-blog-card h3 {
+        margin: 0 0 14px;
+        color: var(--primary);
+        font-size: 18px;
+        line-height: 1.75;
+        font-weight: 800;
+    }
+    .mobile-blog-card a {
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+    .mobile-blog-card a:hover { color: var(--accent); }
+    .mobile-blog-more { margin-top: 24px; text-align: center; }
+    .mobile-blog-more .secondary-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 22px;
+        text-decoration: none;
+    }
+}
 </style>
 </head>
 <body>
@@ -57,6 +141,9 @@
 <section class="pricing-section" id="pricing"><div class="container"><div class="section-title"><h2>تعرفه هوشمند ارسال پیامک</h2><p>هرچه حجم ارسال شما بیشتر باشد، تعرفه همکاری بهینه‌تر می‌شود.</p></div><div class="premium-pricing-box"><div class="pricing-control"><div class="pricing-header"><span>حجم ارسال هفتگی شما</span><strong id="volumeValue">100,000 پیامک</strong></div><input id="volumeRange" type="range" min="10000" max="1000000" value="100000" aria-label="حجم ارسال هفتگی شما"><div class="range-scale"><span>10K</span><span>100K</span><span>500K+</span><span>1M+</span></div><div class="customer-level"><div><span>سطح همکاری</span><strong id="customerLevel">VIP</strong></div><div><span>تعرفه هر پیامک</span><strong id="priceValue">220 تومان</strong></div></div></div><div class="pricing-benefits"><h3>مزایای همکاری با PAYAMAKE</h3><ul><li>تعرفه رقابتی بر اساس حجم ارسال</li><li>ارسال به بانک شماره‌های هدفمند</li><li>امکان اجرای کمپین توسط تیم متخصص</li><li>پشتیبانی و مشاوره برای نتیجه بهتر</li></ul><a href="#" class="primary-button">دریافت تعرفه اختصاصی</a></div></div></div></section>
 <section class="managed-section" id="solutions"><div class="container"><div class="section-title"><h2>کمپین شما، اجرای ما</h2><p>برای کسب‌وکارهایی که به دنبال نتیجه هستند، نه فقط ارسال پیام.</p></div><div class="managed-grid"><div class="managed-card"><div class="managed-icon">&#xf002;</div><span class="managed-step">01</span><h3>تحلیل و پیشنهاد</h3><p>انتخاب مخاطب، زمان ارسال و ساختار کمپین بر اساس هدف کسب‌وکار شما.</p></div><div class="managed-card"><div class="managed-icon">&#xf1d8;</div><span class="managed-step">02</span><h3>اجرای حرفه‌ای</h3><p>ارسال کمپین‌های حجیم توسط تیم PAYAMAKE با کنترل و دقت بالا.</p></div><div class="managed-card"><div class="managed-icon">&#xf201;</div><span class="managed-step">03</span><h3>بهینه‌سازی نتیجه</h3><p>بررسی بازخورد کمپین‌ها و پیشنهاد مسیر بهتر برای ارسال‌های بعدی.</p></div></div></div></section>
 <section class="features-section" id="features"><div class="container"><div class="section-title"><h2>امکاناتی برای اجرای حرفه‌ای کمپین</h2><p>از ارسال ساده تا بازاریابی پیامکی هوشمند</p></div><div class="features-grid"><div class="feature-card"><div class="feature-icon">&#xf1d8;</div><h3>ارسال و مدیریت کمپین</h3><ul><li>ارسال گروهی و تکی</li><li>ارسال زمان‌دار</li><li>ارسال تدریجی</li><li>گزارش‌گیری هوشمند</li></ul></div><div class="feature-card"><div class="feature-icon">&#xf002;</div><h3>هدف‌گیری مخاطب</h3><ul><li>بانک شماره منطقه‌ای</li><li>اصناف و مشاغل</li><li>تفکیک سن و جنسیت</li><li>ارسال از روی نقشه</li></ul></div><div class="feature-card"><div class="feature-icon">&#xf1e6;</div><h3>اتصال و API</h3><ul><li>وب‌سرویس پیامکی</li><li>افزونه وردپرس</li><li>ووکامرس</li><li>OTP</li></ul></div><div class="feature-card"><div class="feature-icon">&#xf201;</div><h3>ابزارهای پیشرفته</h3><ul><li>لینک ترکر</li><li>نظرسنجی</li><li>قرعه‌کشی</li><li>منشی پیامکی</li></ul></div></div></div></section>
+
+<section class="mobile-blog-section" aria-labelledby="mobileBlogTitle"><div class="container"><div class="section-title mobile-blog-section-title"><span class="mobile-blog-eyebrow">PAYAMAKE BLOG</span><h2 id="mobileBlogTitle">آخرین مقالات</h2><p>مطالب کاربردی برای استفاده بهتر از بازاریابی پیامکی</p></div><div class="mobile-blog-grid"><article class="mobile-blog-card"><img src="assets/images/articles/sms-marketing-guide/sms-marketing-02.webp" alt="بازاریابی پیامکی چیست؟" width="1359" height="726" loading="lazy" decoding="async"><div class="mobile-blog-card-content"><span>بازاریابی پیامکی</span><h3>بازاریابی پیامکی چیست؟ راهنمای اجرای کمپین هدفمند</h3><a href="blog/sms-marketing-guide/">مطالعه مقاله</a></div></article><article class="mobile-blog-card"><img src="assets/images/articles/best-time-to-send-promotional-sms/best-time-01.webp" alt="بهترین زمان ارسال پیامک تبلیغاتی" width="1359" height="726" loading="lazy" decoding="async"><div class="mobile-blog-card-content"><span>تبلیغات پیامکی</span><h3>بهترین زمان ارسال پیامک تبلیغاتی | راهنمای زمان‌بندی</h3><a href="blog/best-time-to-send-promotional-sms/">مطالعه مقاله</a></div></article><article class="mobile-blog-card"><img src="assets/images/articles/how-to-write-promotional-sms/promotional-sms-copy-01.webp" alt="چطور متن پیامک تبلیغاتی بنویسیم" width="1359" height="726" loading="lazy" decoding="async"><div class="mobile-blog-card-content"><span>تبلیغات پیامکی</span><h3>چطور متن پیامک تبلیغاتی بنویسیم؟ راهنمای نوشتن پیامک پرفروش</h3><a href="blog/how-to-write-promotional-sms/">مطالعه مقاله</a></div></article></div><div class="mobile-blog-more"><a href="blog/" class="secondary-button">مشاهده همه مقالات</a></div></div></section>
+
 <section class="trust-section" id="trust"><div class="container"><div class="section-title"><h2>تجربه همکاری با کسب‌وکارها</h2><p>کمک به برندها برای ارتباط بهتر با مشتریان خود</p></div><div class="trust-grid"><div class="trust-card"><div class="trust-icon">&#xf072;</div><h3>الفبای سفر</h3><p>اجرای کمپین‌های ارتباطی و بازاریابی پیامکی</p></div><div class="trust-card"><div class="trust-icon">&#xf0f2;</div><h3>رکسان گشت</h3><p>راهکارهای ارتباط مستقیم با مشتریان</p></div><div class="trust-card"><div class="trust-icon">&#xf0ac;</div><h3>بی‌سان سیر</h3><p>استفاده از پیامک هدفمند برای ارتباط موثرتر</p></div></div></div></section>
 <section class="cta-section"><div class="container"><div class="cta-box"><h2>هرپیام، یک فرصت!</h2><p>برای شروع یک کمپین پیامکی حرفه‌ای، تیم PAYAMAKE کنار شماست.</p><div class="cta-buttons"><a href="#" class="primary-button">دریافت مشاوره و شروع همکاری</a></div></div></div></section>
 </main>
