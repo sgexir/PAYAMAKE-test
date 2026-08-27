@@ -27,8 +27,7 @@ CREATE TABLE IF NOT EXISTS sms_templates (
     is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (provider_id) REFERENCES sms_providers(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    CHECK (template_id IS NOT NULL OR message_template IS NOT NULL)
+    FOREIGN KEY (provider_id) REFERENCES sms_providers(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_sms_templates_provider_purpose_default
