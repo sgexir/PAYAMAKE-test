@@ -55,17 +55,30 @@
     .mobile-blog-section-title h2 { margin-bottom: 10px; }
     .mobile-blog-section-title p { font-size: 14px; line-height: 1.9; }
     .mobile-blog-grid {
-        display: grid;
-        grid-template-columns: 1fr;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
         gap: 18px;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        touch-action: pan-x;
+        padding: 0 0 10px;
     }
+    .mobile-blog-grid::-webkit-scrollbar { display: none; }
     .mobile-blog-card {
-        min-width: 0;
+        flex: 0 0 86% !important;
+        width: 86% !important;
+        min-width: 86% !important;
+        max-width: 86% !important;
         overflow: hidden;
         background: #ffffff;
         border: 1px solid #e5e7eb;
         border-radius: 22px;
         box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        scroll-snap-align: start;
     }
     .mobile-blog-card img {
         display: block;
