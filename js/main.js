@@ -572,7 +572,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 try {
                     const response = await fetch(
-                        "https://payamake-contact-staging.sgexir.workers.dev/",
+                        "/api/",
                         {
                             method: "POST",
                             headers: {
