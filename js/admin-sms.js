@@ -55,7 +55,7 @@
   async function loadTemplates() {
     try { const d=await api('/api/admin/sms/templates'); $('#templatesList').innerHTML=(d.templates||[]).map(t=>`<article class="template-card"><div class="template-head"><div><strong>${esc(t.provider_name)} — ${esc(purposeLabel(t.purpose))}</strong><small>${esc(t.name)}</small></div>${t.is_enabled ? '<span class="sms-status sent">فعال</span>' : '<span class="sms-status failed">غیرفعال</span>'}</div><div class="template-fields"><label>Template ID / Ref<input data-ref="${t.id}" value="${esc(t.template_ref || '')}" placeholder="برای Provider مربوطه"></label><label>متن Template<textarea data-message="${t.id}" rows="4" placeholder="متن مخصوص همین Provider">${esc(t.message_text || '')}</textarea></label></div><div class="provider-actions"><label class="switch"><input type="checkbox" data-template-enabled="${t.id}" ${t.is_enabled ? 'checked' : ''}><span>فعال</span></label><button class="admin-button primary small" data-save-template="${t.id}">ذخیره Template</button></div></article>`).join('') || empty('Templateها هنوز در D1 ساخته نشده‌اند.');
       $$('[data-save-template]').forEach(b=>b.onclick=async()=>{try{const id=b.dataset.saveTemplate;await api('/api/admin/sms/templates',{method:'POST',body:JSON.stringify({id,templateRef:$(`[data-ref="${id}"]`).value,messageText:$(`[data-message="${id}"]`).value,enabled:$(`[data-template-enabled="${id}"]`).checked})});showMessage('Template ذخیره شد.','success');loadTemplates();}catch(e){showMessage(e.message,'error')}});
-    } catch(e) { showMessage(e.message,'error'); }
+    } catch(e) { showMessage(e.message, 'error'); }
   }
 
   async function loadLogs() {
@@ -70,13 +70,11 @@
   function empty(text) { return `<div class="sms-empty">${esc(text)}</div>`; }
 
   document.addEventListener('DOMContentLoaded', () => {
-    if (!location.pathname.startsWith('/admin/sms')) return;
+    const isControlCenter = location.pathname === '/admin/' || location.pathname === '/admin/index.html';
+    if (!isControlCenter) return;
     $$('.sms-tab').forEach(b=>b.onclick=()=>activateTab(b.dataset.tab));
     $$('[data-go-tab]').forEach(b=>b.onclick=()=>activateTab(b.dataset.goTab));
     $('#refreshLogs')?.addEventListener('click',loadLogs); $('#logProvider')?.addEventListener('change',loadLogs); $('#logStatus')?.addEventListener('change',loadLogs);
-    const originalFetch = window.fetch;
-    // admin.js already authenticates the session on dashboard pages; this page uses the same cookie-backed session.
-    api('/api/admin/me').then(d=>{ if(d.admin && $('#adminName')) $('#adminName').textContent=d.admin.fullName || d.admin.email; }).catch(()=>{});
     loadOverview();
   });
 })();
