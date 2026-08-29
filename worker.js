@@ -13,11 +13,9 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }
 
-    if (!url.pathname.startsWith("/api/")) {
-      return env.ASSETS.fetch(request);
-    }
+    if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
 
-    if (url.pathname.startsWith("/api/admin/sms/")) {
+    if (url.pathname.startsWith("/api/admin/sms/") || url.pathname.startsWith("/api/admin/system/")) {
       const response = await handleAdminApi(request, env);
       return withCors(response, origin);
     }
@@ -27,9 +25,7 @@ export default {
       return withCors(response, origin);
     }
 
-    if (request.method !== "POST") {
-      return jsonResponse({ success: false, error: "Method Not Allowed" }, 405, origin);
-    }
+    if (request.method !== "POST") return jsonResponse({ success: false, error: "Method Not Allowed" }, 405, origin);
 
     try {
       if (!env.ADMIN_MOBILE) return jsonResponse({ success: false, error: "ADMIN_MOBILE تنظیم نشده است." }, 500, origin);
@@ -67,52 +63,13 @@ export default {
       const leadId = insertResult.meta?.last_row_id;
       if (!leadId) return jsonResponse({ success: false, error: "ذخیره درخواست انجام نشد." }, 500, origin);
 
-      const customerResult = await sendLeadSms({
-        env,
-        db: env.DB,
-        leadId,
-        recipient: normalizedPhone,
-        purpose: "lead_customer",
-        parameters: [{ name: "FULLNAME", value: safeFullName }],
-        message: env.NIAZPARDAZ_CUSTOMER_MESSAGE || "سلام {FULLNAME}، درخواست شما با موفقیت ثبت شد.",
-      });
+      const customerResult = await sendLeadSms({ env, db: env.DB, leadId, recipient: normalizedPhone, purpose: "lead_customer", parameters: [{ name: "FULLNAME", value: safeFullName }], message: env.NIAZPARDAZ_CUSTOMER_MESSAGE || "سلام {FULLNAME}، درخواست شما با موفقیت ثبت شد." });
       await updateSmsStatus(env.DB, leadId, "customer_sms_status", customerResult.success ? "sent" : "failed");
 
-      const adminResult = await sendLeadSms({
-        env,
-        db: env.DB,
-        leadId,
-        recipient: adminMobile,
-        purpose: "lead_admin",
-        parameters: [
-          { name: "FULLNAME", value: safeFullName },
-          { name: "PHONE", value: normalizedPhone },
-          { name: "BRAND", value: safeBrand },
-          { name: "TYPE", value: safeType },
-          { name: "DESCRIPTION", value: safeDescription },
-        ],
-        message: env.NIAZPARDAZ_ADMIN_MESSAGE || "Lead جدید: {FULLNAME} - {PHONE}",
-      });
+      const adminResult = await sendLeadSms({ env, db: env.DB, leadId, recipient: adminMobile, purpose: "lead_admin", parameters: [{ name: "FULLNAME", value: safeFullName }, { name: "PHONE", value: normalizedPhone }, { name: "BRAND", value: safeBrand }, { name: "TYPE", value: safeType }, { name: "DESCRIPTION", value: safeDescription }], message: env.NIAZPARDAZ_ADMIN_MESSAGE || "Lead جدید: {FULLNAME} - {PHONE}" });
       await updateSmsStatus(env.DB, leadId, "admin_sms_status", adminResult.success ? "sent" : "failed");
 
-      return jsonResponse({
-        success: customerResult.success && adminResult.success,
-        leadId,
-        customerSms: {
-          sent: customerResult.success,
-          provider: customerResult.providerKey,
-          logId: customerResult.logId,
-          status: customerResult.status,
-          error: customerResult.errorMessage || null,
-        },
-        adminSms: {
-          sent: adminResult.success,
-          provider: adminResult.providerKey,
-          logId: adminResult.logId,
-          status: adminResult.status,
-          error: adminResult.errorMessage || null,
-        },
-      }, 200, origin);
+      return jsonResponse({ success: customerResult.success && adminResult.success, leadId, customerSms: { sent: customerResult.success, provider: customerResult.providerKey, logId: customerResult.logId, status: customerResult.status, error: customerResult.errorMessage || null }, adminSms: { sent: adminResult.success, provider: adminResult.providerKey, logId: adminResult.logId, status: adminResult.status, error: adminResult.errorMessage || null } }, 200, origin);
     } catch (error) {
       console.error("Worker error:", error);
       return jsonResponse({ success: false, error: error instanceof Error ? error.message : "خطای ناشناخته" }, 500, origin);
@@ -120,9 +77,33 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(refreshPendingSmsDeliveries(env));
+    ctx.waitUntil(runDeliveryCron(env));
   },
 };
+
+async function runDeliveryCron(env) {
+  const startedAt = Date.now();
+  try {
+    await ensureSystemLogsTable(env.DB);
+    const result = await refreshPendingSmsDeliveries(env);
+    await writeSystemLog(env.DB, "info", "sms_delivery_cron", "SMS delivery cron completed", { ...result, durationMs: Date.now() - startedAt });
+    console.log("SMS delivery cron completed", result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("SMS delivery cron failed:", error);
+    try { await ensureSystemLogsTable(env.DB); await writeSystemLog(env.DB, "error", "sms_delivery_cron", message, { durationMs: Date.now() - startedAt, stack: error?.stack || null }); } catch (logError) { console.error("Could not persist cron error:", logError); }
+  }
+}
+
+async function ensureSystemLogsTable(db) {
+  if (!db) return;
+  await db.prepare(`CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT NOT NULL DEFAULT 'info', source TEXT NOT NULL, event TEXT, message TEXT, details_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
+}
+
+async function writeSystemLog(db, level, source, message, details = null) {
+  if (!db) return;
+  await db.prepare(`INSERT INTO system_logs (level, source, event, message, details_json) VALUES (?, ?, ?, ?, ?)`).bind(level, source, source, message, details == null ? null : JSON.stringify(details)).run();
+}
 
 async function updateSmsStatus(db, leadId, column, status) {
   const allowedColumns = ["customer_sms_status", "admin_sms_status"];
@@ -141,13 +122,7 @@ function limitForPattern(value) { return String(value || "").slice(0, 40); }
 
 function corsHeaders(origin) {
   const allowedOrigin = origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN;
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Credentials": "true",
-    Vary: "Origin",
-  };
+  return { "Access-Control-Allow-Origin": allowedOrigin, "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Credentials": "true", Vary: "Origin" };
 }
 
 function withCors(response, origin) {
@@ -157,8 +132,5 @@ function withCors(response, origin) {
 }
 
 function jsonResponse(data, status = 200, origin = null) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json; charset=UTF-8", ...corsHeaders(origin) },
-  });
+  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=UTF-8", ...corsHeaders(origin) } });
 }
