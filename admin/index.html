@@ -32,7 +32,7 @@
 <section id="analytics" class="dashboard-section control-section"><div class="section-heading"><h2>تحلیل و SEO</h2><span>مرکز گزارش</span></div><div class="feature-grid"><div class="feature-card"><div class="feature-icon">◫</div><div><strong>Analytics</strong><small>داشبورد تجمیعی آمار در مرحله بعد متصل می‌شود.</small></div></div><div class="feature-card"><div class="feature-icon">⌕</div><div><strong>SEO</strong><small>شاخص‌های SEO و Search Console در مرحله بعد اضافه می‌شوند.</small></div></div></div></section>
 <section class="security-notice"><div class="security-icon">✓</div><div><strong>اتصال امن برقرار است</strong><p>نشست مدیریت با کوکی امن و HttpOnly محافظت می‌شود.</p></div></section>
 </div></main>
-<script src="../js/admin.js"></script><script src="../js/admin-sms.js"></script><script src="../js/admin-system.js"></script>
+<script src="../js/admin.js"></script><script src="../js/admin-sms.js"></script><script src="../js/admin-system.js"></script><script src="../js/admin-monitoring.js"></script>
 <script>
 (function(){
 function activateSmsTab(name){ document.querySelectorAll('.sms-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name);}); document.querySelectorAll('.sms-panel').forEach(function(p){p.classList.toggle('active',p.dataset.panel===name);}); }
@@ -41,56 +41,4 @@ document.addEventListener('click',function(e){ var tab=e.target.closest('.sms-ta
 document.addEventListener('DOMContentLoaded',function(){activateSection('sms');activateSmsTab('overview');});
 })();
 </script>
-<script>
-(function(){
-  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-  const purpose = p => p === 'lead_customer' ? 'پیامک مشتری' : p === 'lead_admin' ? 'پیامک مدیر' : p;
-  const status = v => `<span class="sms-status ${esc(v)}">${({sent:'ارسال شده',failed:'ناموفق',pending:'در انتظار',delivered:'دلیور شده',unknown:'نامشخص'}[v] || esc(v || '—'))}</span>`;
-  let currentPage = 1;
-
-  function toast(text, error){
-    let el = document.getElementById('smsPagerToast');
-    if(!el){ el=document.createElement('div'); el.id='smsPagerToast'; el.style.cssText='position:fixed;top:24px;right:24px;z-index:10001;padding:13px 18px;border-radius:12px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.14);font-size:14px;font-weight:700;transition:.2s;'; document.body.appendChild(el); }
-    el.textContent=text; el.style.border=`1px solid ${error?'#fecaca':'#bbf7d0'}`; el.style.color=error?'#991b1b':'#166534'; el.style.opacity='1'; clearTimeout(el._timer); el._timer=setTimeout(()=>el.style.opacity='0',2800);
-  }
-
-  function pageButtons(totalPages, page){
-    if(totalPages<=1) return '';
-    const out=[]; const add=n=>out.push(`<button type="button" class="sms-pagination-button${n===page?' active':''}" data-sms-page="${n}">${n}</button>`); const dots=()=>out.push('<span class="sms-pagination-dots">…</span>');
-    if(totalPages<=7){for(let i=1;i<=totalPages;i++)add(i);} else {add(1); if(page>4)dots(); for(let i=Math.max(2,page-1);i<=Math.min(totalPages-1,page+1);i++)add(i); if(page<totalPages-3)dots(); add(totalPages);}
-    return `<div class="sms-pagination" role="navigation" aria-label="صفحه‌بندی"><button type="button" class="sms-pagination-button nav" data-sms-page="${Math.max(1,page-1)}" ${page<=1?'disabled':''}>قبلی</button>${out.join('')}<button type="button" class="sms-pagination-button nav" data-sms-page="${Math.min(totalPages,page+1)}" ${page>=totalPages?'disabled':''}>بعدی</button></div>`;
-  }
-
-  function render(rows, info){
-    const box=document.getElementById('logsTable'); if(!box)return;
-    if(!rows.length){box.innerHTML='<div class="sms-empty">برای فیلتر فعلی لاگی ثبت نشده است.</div>';return;}
-    const table=`<table class="admin-table sms-logs-table"><thead><tr><th>ID</th><th>زمان</th><th>Lead</th><th>Provider</th><th>نوع</th><th>مقصد</th><th>ارسال</th><th>Delivery</th><th>Template</th><th>Sender</th><th>Provider Code</th><th>Message ID</th><th>جزئیات</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.created_at)}</td><td>${esc(r.lead_id||'—')}</td><td>${esc(r.provider_name||r.provider_key)}</td><td>${esc(purpose(r.purpose))}</td><td dir="ltr">${esc(r.recipient)}</td><td>${status(r.send_status)}</td><td>${status(r.delivery_status)}</td><td>${esc(r.template_id||'—')}</td><td dir="ltr">${esc(r.sender||'—')}</td><td dir="ltr">${esc(r.provider_code||r.provider_status||'—')}</td><td dir="ltr">${esc(r.provider_message_id||'—')}</td><td><details><summary>${r.error_message?'خطا':'مشاهده'}</summary><div class="sms-log-detail"><strong>${r.error_message?'خطا':'پاسخ Provider'}</strong><pre>${esc(r.error_message||r.provider_response||'—')}</pre>${r.message?`<strong>پیام</strong><pre>${esc(r.message)}</pre>`:''}</div></details></td></tr>`).join('')}</tbody></table>`;
-    box.innerHTML=table+pageButtons(info.totalPages,info.page);
-  }
-
-  async function load(page=1, notify=false){
-    const box=document.getElementById('logsTable'); if(!box)return;
-    box.innerHTML='<div class="sms-loading">در حال دریافت لاگ‌ها...</div>';
-    try{
-      const q=new URLSearchParams({pageSize:'20',page:String(page)}); const provider=document.getElementById('logProvider')?.value; const statusValue=document.getElementById('logStatus')?.value;
-      if(provider)q.set('provider',provider); if(statusValue)q.set('status',statusValue);
-      const r=await fetch(`/api/admin/sms/logs?${q}`,{credentials:'include'}); const d=await r.json(); if(!r.ok||d.success===false)throw new Error(d.error||'خطای سرور');
-      currentPage=d.pagination?.page||page; render(d.logs||[],d.pagination||{page:currentPage,totalPages:1}); if(notify)toast(`${d.pagination?.total||0} لاگ با موفقیت بروزرسانی شد.`);
-    }catch(e){box.innerHTML=`<div class="sms-empty">${esc(e.message)}</div>`; if(notify)toast(`بروزرسانی لاگ‌ها ناموفق بود: ${e.message}`,true);}
-  }
-
-  document.addEventListener('click',function(e){
-    const pager=e.target.closest('[data-sms-page]'); if(pager){e.preventDefault();e.stopImmediatePropagation(); if(!pager.disabled)load(Number(pager.dataset.smsPage));return;}
-    const tab=e.target.closest('.sms-tab[data-tab="logs"]'); const go=e.target.closest('[data-go-tab="logs"]');
-    if(tab||go){e.preventDefault();e.stopImmediatePropagation();activateSmsTabLocal();load(1);return;}
-    if(e.target.closest('#refreshLogs')){e.preventDefault();e.stopImmediatePropagation();load(1,true);return;}
-  },true);
-  document.addEventListener('change',function(e){ if(e.target.id==='logProvider'||e.target.id==='logStatus'){e.stopImmediatePropagation();load(1);}},true);
-  function activateSmsTabLocal(){document.querySelectorAll('.sms-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='logs'));document.querySelectorAll('.sms-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel==='logs'));}
-  document.addEventListener('DOMContentLoaded',()=>{ if(location.pathname==='/admin/'||location.pathname==='/admin/index.html') load(1); });
-})();
-</script>
-<style>
-.control-section{display:none!important}.control-section.is-active{display:block!important}.feature-card[data-section-target]{cursor:pointer}.feature-card.is-selected{border-color:#2463eb;box-shadow:0 0 0 3px rgba(36,99,235,.08)}.sms-tabs{position:relative;z-index:10}.sms-tab{pointer-events:auto!important;cursor:pointer!important;position:relative;z-index:11}.sms-panel{display:none}.sms-panel.active{display:block}.system-log-list{display:grid;gap:10px}.system-log-item{padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}.system-log-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px}.system-log-head time{margin-right:auto;font-size:12px;opacity:.65}.system-log-level{font-size:12px;font-weight:800;padding:4px 8px;border-radius:999px}.system-log-error{border-color:#fecaca}.system-log-error .system-log-level{background:#fee2e2;color:#991b1b}.system-log-warn{border-color:#fde68a}.system-log-warn .system-log-level{background:#fef3c7;color:#92400e}.system-log-info .system-log-level{background:#dcfce7;color:#166534}.system-log-message{font-weight:700;line-height:1.8}.system-log-item details{margin-top:8px}.system-log-item pre{white-space:pre-wrap;direction:ltr;text-align:left;overflow:auto;max-height:240px;padding:10px;background:#f8fafc;border-radius:8px;font-size:12px}.system-log-card{margin-top:20px}.sms-pagination,.system-pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;direction:ltr;flex-wrap:wrap}.sms-pagination-button,.system-pagination-button{min-width:34px;height:34px;padding:0 9px;border:1px solid #e5e7eb;border-radius:9px;background:#fff;color:inherit;cursor:pointer;font:inherit;font-size:13px}.sms-pagination-button:hover,.system-pagination-button:hover{border-color:#94a3b8}.sms-pagination-button.active,.system-pagination-button.active{font-weight:800;border-color:#2463eb;box-shadow:0 0 0 2px rgba(36,99,235,.08)}.sms-pagination-button.nav,.system-pagination-button.nav{min-width:auto;padding:0 12px}.sms-pagination-button:disabled,.system-pagination-button:disabled{opacity:.4;cursor:not-allowed}.sms-pagination-dots,.system-pagination-dots{padding:0 3px;opacity:.6}
-</style>
 </body></html>
