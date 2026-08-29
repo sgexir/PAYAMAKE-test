@@ -75,7 +75,7 @@
         const purpose = heading.includes('پیامک مشتری') ? 'lead_customer' : heading.includes('پیامک مدیر') ? 'lead_admin' : '';
         const provider = heading.includes('SMS.ir') ? 'sms_ir' : heading.includes('Niazpardaz') ? 'niazpardaz' : '';
         const row = latest[`${provider}:${purpose}`];
-        if (row) {
+        if (provider === 'sms_ir' && row) {
           if (ref && !ref.value) ref.value = row.template_id || '';
           if (message && !message.value) message.value = row.message || '';
         }
