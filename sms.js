@@ -3,8 +3,7 @@ const SMSIR_REPORT_URL = "https://api.sms.ir/v1/send/";
 const NIAZPARDAZ_BASE_URL = "https://login.niazpardaz.ir/api/v2/RestWebApi";
 
 export async function sendLeadSms({ env, db, leadId, recipient, purpose, parameters, message }) {
-  const configuredProviderKey = String(env.SMS_PROVIDER_DEFAULT || "").trim().toLowerCase();
-  const providerKey = configuredProviderKey || await getDefaultProviderKey(db);
+  const providerKey = await getDefaultProviderKey(db, env);
   const provider = await getProvider(db, providerKey);
   if (!provider || !provider.is_enabled) throw new Error(`SMS provider is not configured or disabled: ${providerKey}`);
   const template = await getTemplate(db, provider.id, purpose);
@@ -44,7 +43,14 @@ export async function refreshPendingSmsDeliveries(env) {
   return { checked: (rows.results || []).length, updated, errors, byProvider };
 }
 
-async function getDefaultProviderKey(db) { const row = await db.prepare(`SELECT provider_key FROM sms_providers WHERE is_enabled = 1 ORDER BY is_default DESC, id ASC LIMIT 1`).first(); return String(row?.provider_key || "niazpardaz").trim().toLowerCase(); }
+async function getDefaultProviderKey(db, env) {
+  const row = await db.prepare(`SELECT provider_key FROM sms_providers WHERE is_enabled = 1 AND is_default = 1 LIMIT 1`).first();
+  if (row?.provider_key) return String(row.provider_key).trim().toLowerCase();
+  const configured = String(env.SMS_PROVIDER_DEFAULT || "").trim().toLowerCase();
+  if (configured) return configured;
+  const fallback = await db.prepare(`SELECT provider_key FROM sms_providers WHERE is_enabled = 1 ORDER BY id ASC LIMIT 1`).first();
+  return String(fallback?.provider_key || "niazpardaz").trim().toLowerCase();
+}
 async function getProvider(db, providerKey) { return db.prepare(`SELECT * FROM sms_providers WHERE provider_key = ? LIMIT 1`).bind(providerKey).first(); }
 async function getTemplate(db, providerId, purpose) { return db.prepare(`SELECT * FROM sms_templates WHERE provider_id = ? AND purpose = ? AND is_enabled = 1 ORDER BY is_default DESC, id ASC LIMIT 1`).bind(providerId, purpose).first(); }
 async function createSmsLog(db, data) { const result = await db.prepare(`INSERT INTO sms_logs (provider_id, lead_id, purpose, recipient, sender, template_id, message, send_status, delivery_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 'unknown', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).bind(data.providerId, data.leadId || null, data.purpose, data.recipient, data.sender || null, data.templateId || null, data.message || null).run(); return result.meta.last_row_id; }
