@@ -37,16 +37,28 @@
     } catch (e) { showMessage(e.message, 'error'); }
   }
 
+  function providerIntegration(p) {
+    const cls = p.integration_status === 'connected' ? 'provider-on' : p.integration_status === 'incomplete' ? 'provider-warning' : 'provider-off';
+    return `<div class="provider-meta"><span>اتصال API</span><strong class="${cls}">${esc(p.integration_label || 'وضعیت نامشخص')}</strong></div><small class="provider-integration-detail">${esc(p.integration_detail || '')}</small>`;
+  }
+
+  function providerSender(p) {
+    if (p.provider_key === 'sms_ir' && !p.sender_number) {
+      return '<strong class="provider-neutral">از تنظیمات API / Template</strong>';
+    }
+    return `<strong dir="ltr">${esc(p.sender_number || 'تنظیم نشده')}</strong>`;
+  }
+
   function providerCard(p) {
     const key = p.provider_key === 'sms_ir' ? 'SMS.ir' : p.provider_key === 'niazpardaz' ? 'Niazpardaz' : p.name;
-    return `<article class="provider-card"><div class="provider-head"><div><span class="provider-name">${esc(key)}</span><small>${esc(p.provider_key)}</small></div>${p.is_default ? '<span class="default-badge">Default</span>' : ''}</div><div class="provider-meta"><span>وضعیت</span><strong class="${p.is_enabled ? 'provider-on' : 'provider-off'}">${p.is_enabled ? 'فعال' : 'غیرفعال'}</strong></div><div class="provider-meta"><span>Sender</span><strong dir="ltr">${esc(p.sender_number || 'تنظیم نشده')}</strong></div></article>`;
+    return `<article class="provider-card"><div class="provider-head"><div><span class="provider-name">${esc(key)}</span><small>${esc(p.provider_key)}</small></div>${p.is_default ? '<span class="default-badge">Default</span>' : ''}</div>${providerIntegration(p)}<div class="provider-meta"><span>وضعیت Provider</span><strong class="${p.is_enabled ? 'provider-on' : 'provider-off'}">${p.is_enabled ? 'فعال' : 'غیرفعال'}</strong></div><div class="provider-meta"><span>${p.provider_key === 'sms_ir' ? 'Sender / شماره فرستنده' : 'Sender'}</span>${providerSender(p)}</div></article>`;
   }
 
   async function loadProviders() {
     setLoading($('#providersList'));
     try {
       const d = await api('/api/admin/sms/providers');
-      $('#providersList').innerHTML = (d.providers || []).map(p => `<article class="provider-card editable"><div class="provider-head"><div><span class="provider-name">${esc(p.name)}</span><small>${esc(p.provider_key)}</small></div>${p.is_default ? '<span class="default-badge">Default</span>' : ''}</div><label>شماره فرستنده<input dir="ltr" data-sender="${p.id}" value="${esc(p.sender_number || '')}" placeholder="شماره ارسال"></label><div class="provider-actions"><label class="switch"><input type="checkbox" data-enabled="${p.id}" ${p.is_enabled ? 'checked' : ''}><span>فعال</span></label><button class="admin-button primary small" data-save-provider="${p.id}">ذخیره</button>${p.is_default ? '' : `<button class="admin-button outline small" data-default-provider="${p.id}">انتخاب Default</button>`}</div></article>`).join('') || empty('Providerها هنوز در D1 ساخته نشده‌اند.');
+      $('#providersList').innerHTML = (d.providers || []).map(p => `<article class="provider-card editable"><div class="provider-head"><div><span class="provider-name">${esc(p.name)}</span><small>${esc(p.provider_key)}</small></div>${p.is_default ? '<span class="default-badge">Default</span>' : ''}</div>${providerIntegration(p)}<label>شماره فرستنده${p.provider_key === 'sms_ir' ? '<small class="field-help">برای Verify Template الزامی نیست.</small>' : ''}<input dir="ltr" data-sender="${p.id}" value="${esc(p.sender_number || '')}" placeholder="${p.provider_key === 'sms_ir' ? 'اختیاری' : 'شماره ارسال'}"></label><div class="provider-actions"><label class="switch"><input type="checkbox" data-enabled="${p.id}" ${p.is_enabled ? 'checked' : ''}><span>فعال</span></label><button class="admin-button primary small" data-save-provider="${p.id}">ذخیره</button>${p.is_default ? '' : `<button class="admin-button outline small" data-default-provider="${p.id}">انتخاب Default</button>`}</div></article>`).join('') || empty('Providerها هنوز در D1 ساخته نشده‌اند.');
       bindProviderActions();
     } catch(e) { showMessage(e.message, 'error'); }
   }
