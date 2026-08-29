@@ -40,12 +40,10 @@ export async function handleAdminApi(request, env) {
 }
 
 async function requireAdminSession(request, env) {
-  const cookie = request.headers.get("Cookie") || "";
-  const match = cookie.match(/(?:^|;\\s*)payamake_session=([^;]+)/);
-  if (!match) return null;
+  const token = readCookie(request.headers.get("Cookie"), "payamake_session");
+  if (!token) return null;
 
-  const token = decodeURIComponent(match[1]);
-  const tokenHash = await sha256(token);
+  const tokenHash = await sha256(decodeURIComponent(token));
   const session = await env.DB.prepare(`
     SELECT s.admin_id, a.full_name, a.email, a.is_active
     FROM admin_sessions s
@@ -190,6 +188,15 @@ async function listLogs(request, db) {
 
 async function readJson(request) {
   try { return await request.json(); } catch { return null; }
+}
+
+function readCookie(header, name) {
+  const cookies = String(header || "").split(";");
+  for (const item of cookies) {
+    const [key, ...rest] = item.trim().split("=");
+    if (key === name) return rest.join("=");
+  }
+  return null;
 }
 
 async function sha256(value) {
