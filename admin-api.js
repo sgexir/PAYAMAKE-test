@@ -12,7 +12,7 @@ export async function handleAdminApi(request, env) {
     if (request.method === "POST" && path === "/api/admin/sms/providers") return updateProvider(request, env.DB);
     if (request.method === "GET" && path === "/api/admin/sms/templates") return listTemplates(env.DB);
     if (request.method === "POST" && path === "/api/admin/sms/templates") return updateTemplate(request, env.DB);
-    if (request.method === "GET" && path === "/api/admin/sms/logs") return listLogs(request, env.DB);
+    if (request.method === "GET" && path === "/api/admin/sms/logs") return listLogs(request, env.DB, env);
     if (request.method === "POST" && path === "/api/admin/sms/refresh-deliveries") return refreshDeliveries(env.DB, env);
     if (request.method === "GET" && path === "/api/admin/system/logs") return systemLogs(request, env.DB);
     return json({ success: false, error: "Not Found" }, 404);
@@ -28,7 +28,7 @@ async function refreshDeliveries(db, env) {
   try {
     await ensureSystemLogsTable(db);
     const result = await refreshPendingSmsDeliveries(env);
-    await writeSystemLog(db, "info", "sms_delivery_manual", "Manual SMS delivery refresh completed", { ...result, durationMs: Date.now() - startedAt });
+    await writeSystemLog(db, result.errors?.length ? "warn" : "info", "sms_delivery_manual", "Manual SMS delivery refresh completed", { ...result, durationMs: Date.now() - startedAt });
     return json({ success: true, ...result, durationMs: Date.now() - startedAt });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -38,12 +38,26 @@ async function refreshDeliveries(db, env) {
   }
 }
 
+async function refreshForRead(db, env, source) {
+  try {
+    await ensureSystemLogsTable(db);
+    const result = await refreshPendingSmsDeliveries(env);
+    if ((result.checked || 0) || (result.errors?.length || 0)) {
+      await writeSystemLog(db, result.errors?.length ? "warn" : "info", source, "SMS delivery refresh before admin read", result);
+    }
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await ensureSystemLogsTable(db);
+    await writeSystemLog(db, "error", source, message, { stack: error?.stack || null });
+    return { checked: 0, updated: 0, errors: [{ message }], byProvider: {} };
+  }
+}
+
 async function systemLogs(request, db) {
   await ensureSystemLogsTable(db);
-  const url = new URL(request.url);
-  const level = String(url.searchParams.get("level") || "").trim();
-  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 100), 1), 200);
-  const conditions = [], values = [];
+  const url = new URL(request.url), level = String(url.searchParams.get("level") || "").trim();
+  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 100), 1), 200), conditions = [], values = [];
   if (level) { conditions.push("level = ?"); values.push(level); }
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const result = await db.prepare(`SELECT id, level, source, event, message, details_json, created_at FROM system_logs ${where} ORDER BY id DESC LIMIT ${limit}`).bind(...values).all();
@@ -53,10 +67,7 @@ async function systemLogs(request, db) {
 async function ensureSystemLogsTable(db) {
   await db.prepare(`CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT NOT NULL DEFAULT 'info', source TEXT NOT NULL, event TEXT, message TEXT, details_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
 }
-
-async function writeSystemLog(db, level, source, message, details = null) {
-  await db.prepare(`INSERT INTO system_logs (level, source, event, message, details_json) VALUES (?, ?, ?, ?, ?)`).bind(level, source, source, message, details == null ? null : JSON.stringify(details)).run();
-}
+async function writeSystemLog(db, level, source, message, details = null) { await db.prepare(`INSERT INTO system_logs (level, source, event, message, details_json) VALUES (?, ?, ?, ?, ?)`).bind(level, source, source, message, details == null ? null : JSON.stringify(details)).run(); }
 
 async function requireAdminSession(request, env) {
   const token = readCookie(request.headers.get("Cookie"), "payamake_session");
@@ -66,6 +77,7 @@ async function requireAdminSession(request, env) {
 }
 
 async function smsOverview(db, env) {
+  await refreshForRead(db, env, "sms_overview");
   const [providers, totals, recent] = await Promise.all([
     db.prepare(`SELECT id, provider_key, name, sender_number, is_enabled, is_default, created_at, updated_at FROM sms_providers ORDER BY is_default DESC, id ASC`).all(),
     db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN send_status = 'sent' THEN 1 ELSE 0 END) AS sent, SUM(CASE WHEN send_status = 'failed' THEN 1 ELSE 0 END) AS failed, SUM(CASE WHEN delivery_status = 'delivered' THEN 1 ELSE 0 END) AS delivered, SUM(CASE WHEN delivery_status = 'pending' THEN 1 ELSE 0 END) AS delivery_pending FROM sms_logs`).first(),
@@ -140,7 +152,8 @@ async function updateTemplate(request, db) {
   return json({ success: true, template: await db.prepare(`SELECT * FROM sms_templates WHERE id = ?`).bind(id).first() });
 }
 
-async function listLogs(request, db) {
+async function listLogs(request, db, env) {
+  await refreshForRead(db, env, "sms_logs");
   const url = new URL(request.url), provider = String(url.searchParams.get("provider") || "").trim(), status = String(url.searchParams.get("status") || "").trim();
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 50), 1), 100), conditions = [], values = [];
   if (provider) { conditions.push("p.provider_key = ?"); values.push(provider); }
