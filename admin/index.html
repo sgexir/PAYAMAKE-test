@@ -1,12 +1,8 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مرکز کنترل مدیریت | PAYAMAKE</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/admin.css">
-    <link rel="stylesheet" href="../css/admin-sms.css">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>مرکز کنترل مدیریت | PAYAMAKE</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/admin.css"><link rel="stylesheet" href="../css/admin-sms.css">
 </head>
 <body class="admin-body admin-auth-pending">
 <header class="admin-header"><div class="admin-container"><a href="../" class="admin-logo"><strong>PAYAMAKE</strong><span>مرکز کنترل مدیریت</span></a><div class="admin-header-actions"><span id="adminName" class="admin-user">در حال بررسی...</span><button id="logoutButton" class="logout-button" type="button">خروج</button></div></div></header>
@@ -35,10 +31,17 @@
 <script src="../js/admin.js"></script><script src="../js/admin-sms.js"></script><script src="../js/admin-system.js"></script><script src="../js/admin-monitoring.js"></script><script src="../js/admin-sms-paging.js"></script>
 <script>
 (function(){
-function activateSmsTab(name){ document.querySelectorAll('.sms-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name);}); document.querySelectorAll('.sms-panel').forEach(function(p){p.classList.toggle('active',p.dataset.panel===name);}); }
-function activateSection(name){ document.querySelectorAll('.control-section').forEach(function(s){s.classList.toggle('is-active',s.id===name);}); document.querySelectorAll('[data-section-target]').forEach(function(c){c.classList.toggle('is-selected',c.dataset.sectionTarget===name);}); }
-document.addEventListener('click',function(e){ var tab=e.target.closest('.sms-tab'); if(tab){e.preventDefault();e.stopPropagation();activateSmsTab(tab.dataset.tab);return;} var go=e.target.closest('[data-go-tab]'); if(go){e.preventDefault();e.stopPropagation();activateSmsTab(go.dataset.goTab);return;} var card=e.target.closest('[data-section-target]'); if(card){e.preventDefault();e.stopPropagation();activateSection(card.dataset.sectionTarget);return;} });
+function activateSmsTab(name){document.querySelectorAll('.sms-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name);});document.querySelectorAll('.sms-panel').forEach(function(p){p.classList.toggle('active',p.dataset.panel===name);});}
+function activateSection(name){document.querySelectorAll('.control-section').forEach(function(s){s.classList.toggle('is-active',s.id===name);});document.querySelectorAll('[data-section-target]').forEach(function(c){c.classList.toggle('is-selected',c.dataset.sectionTarget===name);});}
+document.addEventListener('click',function(e){var tab=e.target.closest('.sms-tab');if(tab){e.preventDefault();e.stopPropagation();activateSmsTab(tab.dataset.tab);return;}var go=e.target.closest('[data-go-tab]');if(go){e.preventDefault();e.stopPropagation();activateSmsTab(go.dataset.goTab);return;}var card=e.target.closest('[data-section-target]');if(card){e.preventDefault();e.stopPropagation();activateSection(card.dataset.sectionTarget);return;}});
 document.addEventListener('DOMContentLoaded',function(){activateSection('sms');activateSmsTab('overview');});
 })();
 </script>
+<style>
+/* Restore dashboard section navigation without changing the existing UI. */
+.control-section{display:none!important}.control-section.is-active{display:block!important}.feature-card[data-section-target]{cursor:pointer}.feature-card[data-section-target].is-selected{border-color:#2463eb;box-shadow:0 0 0 3px rgba(36,99,235,.08)}
+/* Restore the graphical system-log presentation. */
+.system-log-card{overflow:hidden}.system-log-list{display:grid;gap:12px}.system-log-item{border:1px solid #e5e9f0;border-radius:12px;background:#fff;padding:15px 16px}.system-log-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.system-log-head time{margin-right:auto;color:#667085;font-size:11px}.system-log-level{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800}.system-log-error{border-color:#fecaca;background:#fffafa}.system-log-error .system-log-level{background:#fef2f2;color:#b42318}.system-log-warn{border-color:#fed7aa;background:#fffaf5}.system-log-warn .system-log-level{background:#fffaeb;color:#b54708}.system-log-info .system-log-level{background:#eff8ff;color:#175cd3}.system-log-message{font-size:13px;font-weight:700;color:#344054;line-height:1.8}.system-log-item details{margin-top:10px;border-top:1px solid #eef0f3;padding-top:10px}.system-log-item summary{cursor:pointer;color:#2463eb;font-size:12px;font-weight:700}.system-log-item pre{margin:9px 0 0;white-space:pre-wrap;direction:ltr;text-align:left;font:11px/1.6 monospace;background:#101828;color:#f8fafc;padding:12px;border-radius:9px;overflow:auto}.system-pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;flex-wrap:wrap}.system-pagination-button{min-width:34px;height:34px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054;font:inherit;font-size:12px;font-weight:700;cursor:pointer}.system-pagination-button:hover:not(:disabled),.system-pagination-button.active{border-color:#2463eb;background:#2463eb;color:#fff}.system-pagination-button.nav{padding:0 10px}.system-pagination-button:disabled{opacity:.45;cursor:not-allowed}.system-pagination-dots{color:#667085;padding:0 3px}
+@media(max-width:700px){.system-log-head{align-items:flex-start}.system-log-head time{width:100%;margin-right:0}.system-pagination-button{min-width:32px}}
+</style>
 </body></html>
