@@ -10,21 +10,17 @@ export async function handleMonitoringApi(request, env) {
   if (!env.DB) return json({ success: false, error: "Database is not configured." }, 500);
   await ensureMonitoringSettings(env.DB);
   const url = new URL(request.url);
-  if (request.method === "GET" && url.pathname === "/api/admin/system/settings") {
-    return json({ success: true, settings: await readSettings(env.DB) });
-  }
+  if (request.method === "GET" && url.pathname === "/api/admin/system/settings") return json({ success: true, settings: await readSettings(env.DB) });
   if (request.method === "POST" && url.pathname === "/api/admin/system/settings") {
     const body = await readJson(request);
     const allowed = new Set(Object.keys(DEFAULTS));
-    const updates = [];
-    for (const [key, value] of Object.entries(body || {})) {
+    for (const [key, rawValue] of Object.entries(body || {})) {
       if (!allowed.has(key)) continue;
-      let normalized = String(value);
-      if (["delivery_monitoring_enabled", "system_error_logging_enabled", "log_successful_crons", "duplicate_error_suppression_enabled"].includes(key)) normalized = normalized === "1" || normalized === "true" ? "1" : "0";
-      if (key === "error_cooldown_minutes") normalized = String(Math.min(Math.max(Number(value) || 30, 1), 1440));
-      updates.push([key, normalized]);
+      let value = String(rawValue);
+      if (["delivery_monitoring_enabled", "system_error_logging_enabled", "log_successful_crons", "duplicate_error_suppression_enabled"].includes(key)) value = value === "1" || value === "true" ? "1" : "0";
+      if (key === "error_cooldown_minutes") value = String(Math.min(Math.max(Number(rawValue) || 30, 1), 1440));
+      await env.DB.prepare("INSERT INTO system_settings (setting_key, setting_value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP").bind(key, value).run();
     }
-    for (const [key, value] of updates) await env.DB.prepare("INSERT INTO system_settings (setting_key, setting_value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP").bind(key, value).run();
     return json({ success: true, settings: await readSettings(env.DB) });
   }
   return json({ success: false, error: "Not Found" }, 404);
@@ -38,6 +34,7 @@ export async function getMonitoringSetting(db, key) {
 
 export async function shouldLogSystemError(db, source, message) {
   if ((await getMonitoringSetting(db, "system_error_logging_enabled")) !== "1") return false;
+  await ensureSystemLogsTable(db);
   if ((await getMonitoringSetting(db, "duplicate_error_suppression_enabled")) !== "1") return true;
   const cooldown = Number(await getMonitoringSetting(db, "error_cooldown_minutes")) || 30;
   const row = await db.prepare("SELECT created_at FROM system_logs WHERE source = ? AND message = ? AND level IN ('error','warn') ORDER BY id DESC LIMIT 1").bind(source, message).first();
@@ -47,22 +44,18 @@ export async function shouldLogSystemError(db, source, message) {
 }
 
 export async function writeMonitoringError(db, level, source, message, details = null) {
-  if (!(await shouldLogSystemError(db, source, message))) return false;
+  if (!db || !(await shouldLogSystemError(db, source, message))) return false;
   await db.prepare("INSERT INTO system_logs (level, source, event, message, details_json) VALUES (?, ?, ?, ?, ?)").bind(level, source, source, message, details == null ? null : JSON.stringify(details)).run();
   return true;
 }
 
 export async function ensureMonitoringSettings(db) {
+  if (!db) return;
   await db.prepare("CREATE TABLE IF NOT EXISTS system_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
   for (const [key, value] of Object.entries(DEFAULTS)) await db.prepare("INSERT OR IGNORE INTO system_settings (setting_key, setting_value) VALUES (?, ?)").bind(key, value).run();
 }
 
-async function readSettings(db) {
-  const result = await db.prepare("SELECT setting_key, setting_value, updated_at FROM system_settings ORDER BY setting_key").all();
-  const settings = { ...DEFAULTS };
-  for (const row of result.results || []) settings[row.setting_key] = row.setting_value;
-  return settings;
-}
-
+async function ensureSystemLogsTable(db) { await db.prepare("CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT NOT NULL DEFAULT 'info', source TEXT NOT NULL, event TEXT, message TEXT, details_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run(); }
+async function readSettings(db) { const result = await db.prepare("SELECT setting_key, setting_value, updated_at FROM system_settings ORDER BY setting_key").all(); const settings = { ...DEFAULTS }; for (const row of result.results || []) settings[row.setting_key] = row.setting_value; return settings; }
 async function readJson(request) { try { return await request.json(); } catch { return null; } }
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=UTF-8" } }); }
