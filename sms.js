@@ -70,11 +70,37 @@ async function getSmsIrDelivery(env, messageId) {
   const response = await fetch(`${SMSIR_REPORT_URL}${encodeURIComponent(normalizedId)}`, { headers: { Accept: "application/json", "x-api-key": env.SMSIR_API_KEY } });
   const text = await response.text(), raw = parseJson(text);
   if (!response.ok) return { hasStatus: false, raw, errorMessage: raw?.message || `SMS.ir Delivery HTTP ${response.status}` };
-  const data = raw?.data || raw, state = data?.deliveryState;
-  if (state == null) return { hasStatus: false, raw, errorMessage: "SMS.ir پاسخ Delivery بدون deliveryState برگرداند." };
+  const state = findSmsIrDeliveryState(raw);
+  if (state == null) {
+    return { hasStatus: false, raw, errorMessage: "SMS.ir پاسخ Delivery بدون deliveryState برگرداند." };
+  }
+  const numericState = Number(state);
   const map = { 1: "delivered", 2: "failed", 3: "failed", 4: "unknown", 5: "pending", 6: "failed", 7: "failed", 8: "unknown" };
-  return { hasStatus: true, deliveryStatus: map[state] || "unknown", providerStatus: String(state), providerCode: raw?.status ?? null, raw };
+  return { hasStatus: true, deliveryStatus: map[numericState] || "unknown", providerStatus: String(state), providerCode: raw?.status ?? null, raw };
 }
+
+function findSmsIrDeliveryState(raw) {
+  const queue = [raw];
+  const seen = new Set();
+  while (queue.length) {
+    const value = queue.shift();
+    if (!value || typeof value !== "object" || seen.has(value)) continue;
+    seen.add(value);
+    if (Object.prototype.hasOwnProperty.call(value, "deliveryState")) {
+      const state = value.deliveryState;
+      if (state !== null && state !== undefined && state !== "") return state;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) queue.push(item);
+    } else {
+      for (const item of Object.values(value)) {
+        if (item && typeof item === "object") queue.push(item);
+      }
+    }
+  }
+  return null;
+}
+
 function getEnvTemplateRef(env, providerKey, purpose) { if (providerKey !== "sms_ir") return null; return purpose === "lead_customer" ? env.SMSIR_CUSTOMER_TEMPLATE_ID : env.SMSIR_ADMIN_TEMPLATE_ID; }
 function renderTemplate(template, parameters) { let text = String(template || ""); for (const parameter of parameters || []) { const name = String(parameter?.name || ""); if (name) text = text.replaceAll(`{${name}}`, String(parameter?.value ?? "")); } return text; }
 function parseJson(text) { try { return JSON.parse(text); } catch { return { raw: text }; } }
