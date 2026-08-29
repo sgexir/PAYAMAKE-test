@@ -5,8 +5,8 @@ export async function handleAdminApi(request, env) {
   const path = url.pathname;
   if (!env.DB) return json({ success: false, error: "Database is not configured." }, 500);
   try {
-    if (request.method === "GET" && path === "/api/admin/sms/overview") return smsOverview(env.DB);
-    if (request.method === "GET" && path === "/api/admin/sms/providers") return listProviders(env.DB);
+    if (request.method === "GET" && path === "/api/admin/sms/overview") return smsOverview(env.DB, env);
+    if (request.method === "GET" && path === "/api/admin/sms/providers") return listProviders(env.DB, env);
     if (request.method === "POST" && path === "/api/admin/sms/providers") return updateProvider(request, env.DB);
     if (request.method === "GET" && path === "/api/admin/sms/templates") return listTemplates(env.DB);
     if (request.method === "POST" && path === "/api/admin/sms/templates") return updateTemplate(request, env.DB);
@@ -23,17 +23,54 @@ async function requireAdminSession(request, env) {
   const tokenHash = await sha256(decodeURIComponent(token));
   return await env.DB.prepare(`SELECT s.admin_id, a.full_name, a.email, a.is_active FROM admin_sessions s JOIN admins a ON a.id = s.admin_id WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > CURRENT_TIMESTAMP AND a.is_active = 1 LIMIT 1`).bind(tokenHash).first();
 }
-async function smsOverview(db) {
+async function smsOverview(db, env) {
   const [providers, totals, recent] = await Promise.all([
     db.prepare(`SELECT id, provider_key, name, sender_number, is_enabled, is_default, created_at, updated_at FROM sms_providers ORDER BY is_default DESC, id ASC`).all(),
     db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN send_status = 'sent' THEN 1 ELSE 0 END) AS sent, SUM(CASE WHEN send_status = 'failed' THEN 1 ELSE 0 END) AS failed, SUM(CASE WHEN delivery_status = 'delivered' THEN 1 ELSE 0 END) AS delivered, SUM(CASE WHEN delivery_status = 'pending' THEN 1 ELSE 0 END) AS delivery_pending FROM sms_logs`).first(),
     db.prepare(`SELECT l.id, l.lead_id, l.purpose, l.recipient, l.sender, l.template_id, l.send_status, l.delivery_status, l.provider_message_id, l.provider_code, l.provider_status, l.error_message, l.created_at, l.sent_at, l.delivered_at, p.provider_key, p.name AS provider_name FROM sms_logs l JOIN sms_providers p ON p.id = l.provider_id ORDER BY l.id DESC LIMIT 8`).all()
   ]);
-  return json({ success: true, providers: providers.results || [], totals: totals || { total: 0, sent: 0, failed: 0, delivered: 0, delivery_pending: 0 }, recent: recent.results || [] });
+  return json({ success: true, providers: enrichProviders(providers.results || [], env), totals: totals || { total: 0, sent: 0, failed: 0, delivered: 0, delivery_pending: 0 }, recent: recent.results || [] });
 }
-async function listProviders(db) {
+async function listProviders(db, env) {
   const result = await db.prepare(`SELECT id, provider_key, name, sender_number, is_enabled, is_default, created_at, updated_at FROM sms_providers ORDER BY is_default DESC, id ASC`).all();
-  return json({ success: true, providers: result.results || [] });
+  return json({ success: true, providers: enrichProviders(result.results || [], env) });
+}
+function enrichProviders(providers, env) {
+  return providers.map((p) => {
+    const key = String(p.provider_key || "").toLowerCase();
+    let integrationStatus = "not_configured";
+    let integrationLabel = "اتصال API تنظیم نشده";
+    let integrationDetail = "";
+    if (key === "sms_ir") {
+      const hasApiKey = Boolean(String(env.SMSIR_API_KEY || "").trim());
+      const hasCustomerTemplate = Boolean(String(env.SMSIR_CUSTOMER_TEMPLATE_ID || "").trim());
+      const hasAdminTemplate = Boolean(String(env.SMSIR_ADMIN_TEMPLATE_ID || "").trim());
+      if (hasApiKey) {
+        integrationStatus = "connected";
+        integrationLabel = "متصل به API";
+        integrationDetail = hasCustomerTemplate && hasAdminTemplate ? "API و Templateهای ارسال آماده‌اند." : "API متصل است؛ یک یا چند Template ID از تنظیمات ارسال استفاده می‌شود.";
+      } else {
+        integrationDetail = "SMSIR_API_KEY تنظیم نشده است.";
+      }
+    } else if (key === "niazpardaz") {
+      const hasApiKey = Boolean(String(env.NIAZPARDAZ_API_KEY || "").trim());
+      const hasSender = Boolean(String(p.sender_number || env.NIAZPARDAZ_SENDER_NUMBER || "").trim());
+      if (hasApiKey && hasSender) {
+        integrationStatus = "connected";
+        integrationLabel = "متصل به API";
+        integrationDetail = "API و Sender برای ارسال آماده‌اند.";
+      } else if (hasApiKey || hasSender) {
+        integrationStatus = "incomplete";
+        integrationLabel = "تنظیمات ناقص";
+        integrationDetail = !hasApiKey ? "NIAZPARDAZ_API_KEY تنظیم نشده است." : "شماره Sender تنظیم نشده است.";
+      } else {
+        integrationDetail = "API Key و Sender تنظیم نشده‌اند.";
+      }
+    } else {
+      integrationDetail = "برای این Provider وضعیت اتصال تعریف نشده است.";
+    }
+    return { ...p, integration_status: integrationStatus, integration_label: integrationLabel, integration_detail: integrationDetail };
+  });
 }
 async function updateProvider(request, db) {
   const body = await readJson(request);
