@@ -59,12 +59,20 @@
   }
 
   async function loadLogs() {
-    try { const q=new URLSearchParams(); if($('#logProvider').value)q.set('provider',$('#logProvider').value); if($('#logStatus').value)q.set('status',$('#logStatus').value); q.set('limit','100'); const d=await api(`/api/admin/sms/logs?${q}`); $('#logsTable').innerHTML=logsTable(d.logs||[],false); } catch(e){showMessage(e.message,'error');}
+    try {
+      const q = new URLSearchParams();
+      if ($('#logProvider').value) q.set('provider', $('#logProvider').value);
+      if ($('#logStatus').value) q.set('status', $('#logStatus').value);
+      q.set('limit', '100');
+      const d = await api(`/api/admin/sms/logs?${q}`);
+      $('#logsTable').innerHTML = logsTable(d.logs || [], false);
+      showMessage(`${(d.logs || []).length} لاگ نمایش داده شد.`, 'success');
+    } catch(e) { showMessage(e.message, 'error'); }
   }
 
   function logsTable(rows, compact) {
     if (!rows.length) return empty('هنوز لاگی ثبت نشده است.');
-    return `<table class="admin-table"><thead><tr><th>زمان</th><th>Provider</th><th>نوع</th><th>مقصد</th><th>ارسال</th><th>Delivery</th>${compact ? '' : '<th>کد Provider</th><th>Message ID</th><th>خطا / پاسخ</th>'}</tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.created_at)}</td><td>${esc(r.provider_name)}</td><td>${esc(purposeLabel(r.purpose))}</td><td dir="ltr">${esc(r.recipient)}</td><td>${status(r.send_status)}</td><td>${status(r.delivery_status)}</td>${compact ? '' : `<td>${esc(r.provider_code || '—')}</td><td dir="ltr">${esc(r.provider_message_id || '—')}</td><td><details><summary>${esc(r.error_message || 'مشاهده پاسخ')}</summary><pre>${esc(r.provider_response || r.message || '—')}</pre></details></td>`}</tr>`).join('')}</tbody></table>`;
+    return `<table class="admin-table sms-logs-table"><thead><tr><th>ID</th><th>زمان</th><th>Lead</th><th>Provider</th><th>نوع</th><th>مقصد</th><th>ارسال</th><th>Delivery</th>${compact ? '' : '<th>Template</th><th>Sender</th><th>Provider Code</th><th>Message ID</th><th>جزئیات</th>'}</tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.created_at)}</td><td>${esc(r.lead_id || '—')}</td><td>${esc(r.provider_name || r.provider_key)}</td><td>${esc(purposeLabel(r.purpose))}</td><td dir="ltr">${esc(r.recipient)}</td><td>${status(r.send_status)}</td><td>${status(r.delivery_status)}</td>${compact ? '' : `<td>${esc(r.template_id || '—')}</td><td dir="ltr">${esc(r.sender || '—')}</td><td dir="ltr">${esc(r.provider_code || r.provider_status || '—')}</td><td dir="ltr">${esc(r.provider_message_id || '—')}</td><td><details><summary>${r.error_message ? 'خطا' : 'مشاهده'}</summary><div class="sms-log-detail"><strong>${r.error_message ? 'خطا' : 'پاسخ Provider'}</strong><pre>${esc(r.error_message || r.provider_response || '—')}</pre>${r.message ? `<strong>پیام</strong><pre>${esc(r.message)}</pre>` : ''}</div></details></td>`}</tr>`).join('')}</tbody></table>`;
   }
 
   function empty(text) { return `<div class="sms-empty">${esc(text)}</div>`; }
