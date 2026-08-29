@@ -7,6 +7,9 @@ export async function sendLeadSms({ env, db, leadId, recipient, purpose, paramet
   const provider = await getProvider(db, providerKey);
   if (!provider || !provider.is_enabled) throw new Error(`SMS provider is not configured or disabled: ${providerKey}`);
   const template = await getTemplate(db, provider.id, purpose);
+  if (template && Number(template.is_enabled) !== 1) {
+    return { success: true, skipped: true, providerKey, status: 204, providerStatus: "disabled", logId: null, errorMessage: null };
+  }
   const templateRef = template?.template_ref || getEnvTemplateRef(env, providerKey, purpose);
   const renderedMessage = renderTemplate(template?.message_text || message || "", parameters);
   const sender = provider.sender_number || (providerKey === "niazpardaz" ? env.NIAZPARDAZ_SENDER_NUMBER || null : null);
@@ -52,7 +55,7 @@ async function getDefaultProviderKey(db, env) {
   return String(fallback?.provider_key || "niazpardaz").trim().toLowerCase();
 }
 async function getProvider(db, providerKey) { return db.prepare(`SELECT * FROM sms_providers WHERE provider_key = ? LIMIT 1`).bind(providerKey).first(); }
-async function getTemplate(db, providerId, purpose) { return db.prepare(`SELECT * FROM sms_templates WHERE provider_id = ? AND purpose = ? AND is_enabled = 1 ORDER BY is_default DESC, id ASC LIMIT 1`).bind(providerId, purpose).first(); }
+async function getTemplate(db, providerId, purpose) { return db.prepare(`SELECT * FROM sms_templates WHERE provider_id = ? AND purpose = ? ORDER BY is_default DESC, id ASC LIMIT 1`).bind(providerId, purpose).first(); }
 async function createSmsLog(db, data) { const result = await db.prepare(`INSERT INTO sms_logs (provider_id, lead_id, purpose, recipient, sender, template_id, message, send_status, delivery_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 'unknown', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).bind(data.providerId, data.leadId || null, data.purpose, data.recipient, data.sender || null, data.templateId || null, data.message || null).run(); return result.meta.last_row_id; }
 async function updateSmsLog(db, id, data) { const map = { sendStatus: "send_status", deliveryStatus: "delivery_status", providerMessageId: "provider_message_id", providerCode: "provider_code", providerStatus: "provider_status", providerResponse: "provider_response", errorMessage: "error_message", sentAt: "sent_at", deliveredAt: "delivered_at" }; const fields = [], values = []; for (const [key, value] of Object.entries(data)) { if (!(key in map)) continue; fields.push(`${map[key]} = ?`); values.push(value == null ? null : typeof value === "object" ? JSON.stringify(value) : value); } if (!fields.length) return; fields.push("updated_at = CURRENT_TIMESTAMP"); values.push(id); await db.prepare(`UPDATE sms_logs SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run(); }
 
