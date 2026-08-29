@@ -1,5 +1,6 @@
 import { handleAdminAuth } from "./auth.js";
 import { handleAdminApi } from "./admin-api.js";
+import { handleLeadsApi } from "./leads-api.js";
 import { handleMonitoringApi, getMonitoringSetting, writeMonitoringError, ensureMonitoringSettings } from "./monitoring-api.js";
 import { sendLeadSms, refreshPendingSmsDeliveries } from "./sms.js";
 
@@ -17,6 +18,11 @@ export default {
       const adminResponse = await handleAdminApi(request, env);
       if (adminResponse.status === 401) return withCors(adminResponse, origin);
       const response = await handleMonitoringApi(request, env);
+      return withCors(response, origin);
+    }
+
+    if (url.pathname.startsWith("/api/admin/leads")) {
+      const response = await handleLeadsApi(request, env);
       return withCors(response, origin);
     }
 
