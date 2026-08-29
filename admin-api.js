@@ -42,9 +42,7 @@ async function refreshForRead(db, env, source) {
   try {
     await ensureSystemLogsTable(db);
     const result = await refreshPendingSmsDeliveries(env);
-    if ((result.checked || 0) || (result.errors?.length || 0)) {
-      await writeSystemLog(db, result.errors?.length ? "warn" : "info", source, "SMS delivery refresh before admin read", result);
-    }
+    if ((result.checked || 0) || (result.errors?.length || 0)) await writeSystemLog(db, result.errors?.length ? "warn" : "info", source, "SMS delivery refresh before admin read", result);
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -57,16 +55,21 @@ async function refreshForRead(db, env, source) {
 async function systemLogs(request, db) {
   await ensureSystemLogsTable(db);
   const url = new URL(request.url), level = String(url.searchParams.get("level") || "").trim();
-  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 100), 1), 200), conditions = [], values = [];
+  const pageSize = Math.min(Math.max(Number(url.searchParams.get("pageSize") || url.searchParams.get("limit") || 20), 1), 100);
+  const page = Math.max(Number(url.searchParams.get("page") || 1), 1);
+  const conditions = [], values = [];
   if (level) { conditions.push("level = ?"); values.push(level); }
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  const result = await db.prepare(`SELECT id, level, source, event, message, details_json, created_at FROM system_logs ${where} ORDER BY id DESC LIMIT ${limit}`).bind(...values).all();
-  return json({ success: true, logs: result.results || [] });
+  const countRow = await db.prepare(`SELECT COUNT(*) AS total FROM system_logs ${where}`).bind(...values).first();
+  const total = Number(countRow?.total || 0);
+  const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+  const safePage = Math.min(page, totalPages);
+  const offset = (safePage - 1) * pageSize;
+  const result = await db.prepare(`SELECT id, level, source, event, message, details_json, created_at FROM system_logs ${where} ORDER BY id DESC LIMIT ? OFFSET ?`).bind(...values, pageSize, offset).all();
+  return json({ success: true, logs: result.results || [], pagination: { page: safePage, pageSize, total, totalPages } });
 }
 
-async function ensureSystemLogsTable(db) {
-  await db.prepare(`CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT NOT NULL DEFAULT 'info', source TEXT NOT NULL, event TEXT, message TEXT, details_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run();
-}
+async function ensureSystemLogsTable(db) { await db.prepare(`CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT NOT NULL DEFAULT 'info', source TEXT NOT NULL, event TEXT, message TEXT, details_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`).run(); }
 async function writeSystemLog(db, level, source, message, details = null) { await db.prepare(`INSERT INTO system_logs (level, source, event, message, details_json) VALUES (?, ?, ?, ?, ?)`).bind(level, source, source, message, details == null ? null : JSON.stringify(details)).run(); }
 
 async function requireAdminSession(request, env) {
@@ -155,12 +158,19 @@ async function updateTemplate(request, db) {
 async function listLogs(request, db, env) {
   await refreshForRead(db, env, "sms_logs");
   const url = new URL(request.url), provider = String(url.searchParams.get("provider") || "").trim(), status = String(url.searchParams.get("status") || "").trim();
-  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") || 50), 1), 100), conditions = [], values = [];
+  const pageSize = Math.min(Math.max(Number(url.searchParams.get("pageSize") || url.searchParams.get("limit") || 20), 1), 100);
+  const page = Math.max(Number(url.searchParams.get("page") || 1), 1);
+  const conditions = [], values = [];
   if (provider) { conditions.push("p.provider_key = ?"); values.push(provider); }
   if (status) { conditions.push("(l.send_status = ? OR l.delivery_status = ?)"); values.push(status, status); }
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  const result = await db.prepare(`SELECT l.id, l.lead_id, l.purpose, l.recipient, l.sender, l.template_id, l.message, l.send_status, l.delivery_status, l.provider_message_id, l.provider_code, l.provider_status, l.provider_response, l.error_message, l.created_at, l.sent_at, l.delivered_at, p.provider_key, p.name AS provider_name FROM sms_logs l JOIN sms_providers p ON p.id = l.provider_id ${where} ORDER BY l.id DESC LIMIT ${limit}`).bind(...values).all();
-  return json({ success: true, logs: result.results || [] });
+  const countRow = await db.prepare(`SELECT COUNT(*) AS total FROM sms_logs l JOIN sms_providers p ON p.id = l.provider_id ${where}`).bind(...values).first();
+  const total = Number(countRow?.total || 0);
+  const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+  const safePage = Math.min(page, totalPages);
+  const offset = (safePage - 1) * pageSize;
+  const result = await db.prepare(`SELECT l.id, l.lead_id, l.purpose, l.recipient, l.sender, l.template_id, l.message, l.send_status, l.delivery_status, l.provider_message_id, l.provider_code, l.provider_status, l.provider_response, l.error_message, l.created_at, l.sent_at, l.delivered_at, p.provider_key, p.name AS provider_name FROM sms_logs l JOIN sms_providers p ON p.id = l.provider_id ${where} ORDER BY l.id DESC LIMIT ? OFFSET ?`).bind(...values, pageSize, offset).all();
+  return json({ success: true, logs: result.results || [], pagination: { page: safePage, pageSize, total, totalPages } });
 }
 
 async function readJson(request) { try { return await request.json(); } catch { return null; } }
