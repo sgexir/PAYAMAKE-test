@@ -14,60 +14,49 @@
   function toast(text, type = 'success') {
     let el = $('#systemToast');
     if (!el) {
-      el = document.createElement('div');
-      el.id = 'systemToast';
-      el.setAttribute('role', 'status');
-      el.setAttribute('aria-live', 'polite');
+      el = document.createElement('div'); el.id = 'systemToast'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
       el.style.cssText = 'position:fixed;top:24px;right:24px;z-index:10000;max-width:min(460px,calc(100vw - 48px));padding:13px 18px;border-radius:12px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.14);font-size:14px;font-weight:700;transition:opacity .2s ease,transform .2s ease;';
       document.body.appendChild(el);
     }
-    el.textContent = text;
-    el.style.border = `1px solid ${type === 'error' ? '#fecaca' : '#bbf7d0'}`;
-    el.style.color = type === 'error' ? '#991b1b' : '#166534';
-    el.style.opacity = '1';
-    el.style.transform = 'translateY(0)';
-    clearTimeout(el._timer);
-    el._timer = setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-8px)'; }, 3200);
+    el.textContent = text; el.style.border = `1px solid ${type === 'error' ? '#fecaca' : '#bbf7d0'}`; el.style.color = type === 'error' ? '#991b1b' : '#166534'; el.style.opacity = '1'; el.style.transform = 'translateY(0)';
+    clearTimeout(el._timer); el._timer = setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-8px)'; }, 3200);
   }
 
-  function levelLabel(level) {
-    return ({error:'خطا', warn:'هشدار', info:'اطلاعات'}[level] || level || '—');
+  function levelLabel(level) { return ({error:'خطا', warn:'هشدار', info:'اطلاعات'}[level] || level || '—'); }
+
+  function pagination(totalPages, currentPage, onPage) {
+    if (!totalPages || totalPages <= 1) return '';
+    const items = [];
+    const add = (n) => items.push(`<button type="button" class="system-pagination-button${n === currentPage ? ' active' : ''}" data-page="${n}">${n}</button>`);
+    const dots = () => items.push('<span class="system-pagination-dots">…</span>');
+    if (totalPages <= 7) { for (let i = 1; i <= totalPages; i++) add(i); }
+    else { add(1); if (currentPage > 4) dots(); for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) add(i); if (currentPage < totalPages - 3) dots(); add(totalPages); }
+    setTimeout(() => $$('.system-pagination-button[data-page]').forEach(b => b.onclick = () => onPage(Number(b.dataset.page))), 0);
+    return `<div class="system-pagination" role="navigation" aria-label="صفحه‌بندی"><button type="button" class="system-pagination-button nav" data-page="${Math.max(1,currentPage-1)}" ${currentPage <= 1 ? 'disabled' : ''}>قبلی</button>${items.join('')}<button type="button" class="system-pagination-button nav" data-page="${Math.min(totalPages,currentPage+1)}" ${currentPage >= totalPages ? 'disabled' : ''}>بعدی</button></div>`;
   }
 
-  function renderLogs(rows) {
-    const box = $('#systemLogsTable');
-    if (!box) return;
+  function renderLogs(rows, pageInfo) {
+    const box = $('#systemLogsTable'); if (!box) return;
     if (!rows.length) { box.innerHTML = '<div class="sms-empty">هنوز خطای سیستمی ثبت نشده است.</div>'; return; }
     box.innerHTML = `<div class="system-log-list">${rows.map((r) => {
-      let details = '';
-      try { details = r.details_json ? JSON.stringify(JSON.parse(r.details_json), null, 2) : ''; } catch { details = String(r.details_json || ''); }
+      let details = ''; try { details = r.details_json ? JSON.stringify(JSON.parse(r.details_json), null, 2) : ''; } catch { details = String(r.details_json || ''); }
       const cls = r.level === 'error' ? 'system-log-error' : r.level === 'warn' ? 'system-log-warn' : 'system-log-info';
       return `<article class="system-log-item ${cls}"><div class="system-log-head"><span class="system-log-level">${esc(levelLabel(r.level))}</span><strong>${esc(r.source)}</strong><time dir="ltr">${esc(r.created_at)}</time></div><div class="system-log-message">${esc(r.message || '—')}</div>${details ? `<details><summary>جزئیات فنی</summary><pre>${esc(details)}</pre></details>` : ''}</article>`;
-    }).join('')}</div>`;
+    }).join('')}</div>${pagination(pageInfo.totalPages, pageInfo.page, loadSystemLogs)} `;
   }
 
-  async function loadSystemLogs({ notify = false } = {}) {
-    const box = $('#systemLogsTable');
-    if (box) box.innerHTML = '<div class="sms-loading">در حال دریافت لاگ‌های سیستم...</div>';
+  async function loadSystemLogs(page = 1, notify = false) {
+    const box = $('#systemLogsTable'); if (box) box.innerHTML = '<div class="sms-loading">در حال دریافت لاگ‌های سیستم...</div>';
     try {
-      const d = await api('/api/admin/system/logs?limit=100');
-      renderLogs(d.logs || []);
-      if (notify) toast(`${(d.logs || []).length} رویداد سیستمی دریافت شد.`);
-    } catch (e) {
-      if (box) box.innerHTML = `<div class="sms-empty">${esc(e.message)}</div>`;
-      if (notify) toast(`دریافت لاگ‌های سیستم ناموفق بود: ${e.message}`, 'error');
-    }
+      const d = await api(`/api/admin/system/logs?pageSize=20&page=${page}`);
+      renderLogs(d.logs || [], d.pagination || { page, totalPages: 1 });
+      if (notify) toast(`${d.pagination?.total || (d.logs || []).length} رویداد سیستمی دریافت شد.`);
+    } catch (e) { if (box) box.innerHTML = `<div class="sms-empty">${esc(e.message)}</div>`; if (notify) toast(`دریافت لاگ‌های سیستم ناموفق بود: ${e.message}`, 'error'); }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     if (!(location.pathname === '/admin/' || location.pathname === '/admin/index.html')) return;
-    $('#refreshSystemLogs')?.addEventListener('click', async () => {
-      const b = $('#refreshSystemLogs');
-      b.disabled = true;
-      const old = b.textContent;
-      b.textContent = 'در حال بروزرسانی...';
-      try { await loadSystemLogs({ notify: true }); } finally { b.disabled = false; b.textContent = old; }
-    });
+    $('#refreshSystemLogs')?.addEventListener('click', async () => { const b = $('#refreshSystemLogs'); b.disabled = true; const old = b.textContent; b.textContent = 'در حال بروزرسانی...'; try { await loadSystemLogs(1, true); } finally { b.disabled = false; b.textContent = old; } });
     loadSystemLogs();
   });
 })();
