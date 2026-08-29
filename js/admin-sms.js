@@ -13,7 +13,42 @@
     return data;
   }
   function showMessage(text, type = '') { const el = $('#smsMessage'); if (!el) return; el.textContent = text || ''; el.className = `form-message ${type}`; }
+
+  function showToast(text, type = 'success') {
+    let toast = $('#smsToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'smsToast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;max-width:min(420px,calc(100vw - 48px));padding:13px 18px;border-radius:12px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.14);font-size:14px;font-weight:700;opacity:0;transform:translateY(-8px);transition:opacity .2s ease,transform .2s ease;pointer-events:none;';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = text;
+    toast.style.border = `1px solid ${type === 'error' ? '#fecaca' : '#bbf7d0'}`;
+    toast.style.color = type === 'error' ? '#991b1b' : '#166534';
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-8px)';
+    }, 2800);
+  }
+
   function setLoading(target, text = 'در حال بارگذاری...') { if (target) target.innerHTML = `<div class="sms-loading" role="status">${esc(text)}</div>`; }
+
+  function setButtonLoading(button, loading) {
+    if (!button) return;
+    if (loading) {
+      button.disabled = true;
+      if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
+      button.textContent = 'در حال بروزرسانی...';
+    } else {
+      button.disabled = false;
+      if (button.dataset.originalText) button.textContent = button.dataset.originalText;
+    }
+  }
 
   function activateTab(name) {
     $$('.sms-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -24,7 +59,7 @@
     if (name === 'logs') loadLogs();
   }
 
-  async function loadOverview() {
+  async function loadOverview({ notify = false } = {}) {
     setLoading($('#smsStats'));
     try {
       const d = await api('/api/admin/sms/overview'), t = d.totals || {};
@@ -33,8 +68,11 @@
       ].map(x => `<article class="sms-stat"><span>${x[0]}</span><strong>${x[1]}</strong></article>`).join('');
       $('#providerSummary').innerHTML = (d.providers || []).map(providerCard).join('') || empty('هنوز Provider ثبت نشده است.');
       $('#recentLogs').innerHTML = logsTable(d.recent || [], true);
-      showMessage(`آخرین وضعیت در ${new Date().toLocaleTimeString('fa-IR')} دریافت شد.`, 'success');
-    } catch (e) { showMessage(e.message, 'error'); }
+      if (notify) showToast('وضعیت پیامک‌ها با موفقیت بروزرسانی شد.', 'success');
+    } catch (e) {
+      showMessage(e.message, 'error');
+      if (notify) showToast(`بروزرسانی وضعیت پیامک‌ها ناموفق بود: ${e.message}`, 'error');
+    }
   }
 
   function providerIntegration(p) {
@@ -90,7 +128,7 @@
     } catch(e) { showMessage(e.message, 'error'); }
   }
 
-  async function loadLogs() {
+  async function loadLogs({ notify = false } = {}) {
     setLoading($('#logsTable'));
     try {
       const q = new URLSearchParams();
@@ -99,8 +137,11 @@
       q.set('limit', '100');
       const d = await api(`/api/admin/sms/logs?${q}`);
       $('#logsTable').innerHTML = logsTable(d.logs || [], false);
-      showMessage(`${(d.logs || []).length} لاگ نمایش داده شد.`, 'success');
-    } catch(e) { showMessage(e.message, 'error'); }
+      if (notify) showToast(`${(d.logs || []).length} لاگ با موفقیت بروزرسانی شد.`, 'success');
+    } catch(e) {
+      showMessage(e.message, 'error');
+      if (notify) showToast(`بروزرسانی لاگ‌ها ناموفق بود: ${e.message}`, 'error');
+    }
   }
 
   function logsTable(rows, compact) {
@@ -114,10 +155,18 @@
     if (!isControlCenter) return;
     $$('.sms-tab').forEach(b=>b.onclick=()=>activateTab(b.dataset.tab));
     $$('[data-go-tab]').forEach(b=>b.onclick=()=>activateTab(b.dataset.goTab));
-    $('#refreshLogs')?.addEventListener('click',loadLogs);
+    $('#refreshLogs')?.addEventListener('click', async () => {
+      const button = $('#refreshLogs');
+      setButtonLoading(button, true);
+      try { await loadLogs({ notify: true }); } finally { setButtonLoading(button, false); }
+    });
     $('#logProvider')?.addEventListener('change',loadLogs);
     $('#logStatus')?.addEventListener('change',loadLogs);
-    $('#refreshSmsOverview')?.addEventListener('click',loadOverview);
+    $('#refreshSmsOverview')?.addEventListener('click', async () => {
+      const button = $('#refreshSmsOverview');
+      setButtonLoading(button, true);
+      try { await loadOverview({ notify: true }); } finally { setButtonLoading(button, false); }
+    });
     loadOverview();
   });
 })();
