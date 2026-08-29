@@ -1,5 +1,5 @@
 const SMSIR_VERIFY_URL = "https://api.sms.ir/v1/send/verify";
-const SMSIR_REPORT_URL = "https://api.sms.ir/v1/send/report/";
+const SMSIR_REPORT_URL = "https://api.sms.ir/v1/send/";
 const NIAZPARDAZ_BASE_URL = "https://login.niazpardaz.ir/api/v2/RestWebApi";
 
 export async function sendLeadSms({ env, db, leadId, recipient, purpose, parameters, message }) {
