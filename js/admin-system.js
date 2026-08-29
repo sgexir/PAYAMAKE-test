@@ -2,6 +2,8 @@
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const fallbackSamples = { lead_customer: 'سلام {FULLNAME}، درخواست شما با موفقیت ثبت شد.', lead_admin: 'Lead جدید: {FULLNAME} - {PHONE}' };
+  const fallbackVariables = { lead_customer: ['FULLNAME'], lead_admin: ['FULLNAME','PHONE','BRAND','TYPE','DESCRIPTION'] };
 
   async function api(path, options = {}) {
     const r = await fetch(path, { credentials: 'include', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
@@ -54,9 +56,56 @@
     } catch (e) { if (box) box.innerHTML = `<div class="sms-empty">${esc(e.message)}</div>`; if (notify) toast(`دریافت لاگ‌های سیستم ناموفق بود: ${e.message}`, 'error'); }
   }
 
+  async function hydrateSmsTemplates() {
+    const cards = $$('#templatesList .template-card');
+    if (!cards.length) return;
+    try {
+      const d = await api('/api/admin/sms/logs?pageSize=100&page=1');
+      const latest = {};
+      for (const row of d.logs || []) {
+        const key = `${row.provider_key}:${row.purpose}`;
+        if (!latest[key]) latest[key] = row;
+      }
+      cards.forEach(card => {
+        const ref = card.querySelector('[data-ref]');
+        const message = card.querySelector('[data-message]');
+        const vars = card.querySelector('[data-variables]');
+        if (!ref && !message && !vars) return;
+        const heading = card.querySelector('.template-head strong')?.textContent || '';
+        const purpose = heading.includes('پیامک مشتری') ? 'lead_customer' : heading.includes('پیامک مدیر') ? 'lead_admin' : '';
+        const provider = heading.includes('SMS.ir') ? 'sms_ir' : heading.includes('Niazpardaz') ? 'niazpardaz' : '';
+        const row = latest[`${provider}:${purpose}`];
+        if (row) {
+          if (ref && !ref.value) ref.value = row.template_id || '';
+          if (message && !message.value) message.value = row.message || '';
+        }
+        if (vars && (!vars.value || vars.value === '[]')) vars.value = JSON.stringify(fallbackVariables[purpose] || []);
+        if (message && !message.value) message.value = fallbackSamples[purpose] || '';
+      });
+    } catch (e) {
+      console.warn('SMS template hydration failed:', e);
+    }
+  }
+
+  function installSmsTemplateHydration() {
+    document.addEventListener('click', (e) => {
+      const tab = e.target.closest('.sms-tab[data-tab="templates"]');
+      if (tab) {
+        let tries = 0;
+        const timer = setInterval(async () => {
+          tries++;
+          await hydrateSmsTemplates();
+          if ($('#templatesList .template-card') || tries >= 12) clearInterval(timer);
+        }, 250);
+      }
+    });
+    setTimeout(hydrateSmsTemplates, 800);
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     if (!(location.pathname === '/admin/' || location.pathname === '/admin/index.html')) return;
     $('#refreshSystemLogs')?.addEventListener('click', async () => { const b = $('#refreshSystemLogs'); b.disabled = true; const old = b.textContent; b.textContent = 'در حال بروزرسانی...'; try { await loadSystemLogs(1, true); } finally { b.disabled = false; b.textContent = old; } });
+    installSmsTemplateHydration();
     loadSystemLogs();
   });
 })();
