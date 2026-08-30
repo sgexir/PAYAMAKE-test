@@ -15,9 +15,12 @@ export async function handleCloudflareAnalytics(request, env) {
     const end = new Date();
     const start = new Date(end.getTime() - days * 86400000);
     const rows = await queryWorkerMetrics(env, start, end);
+    const availableWorkers = [...new Set(rows.map(row => String(row?.dimensions?.scriptName || "")).filter(Boolean))];
+    const selectedRows = rows.filter(row => String(row?.dimensions?.scriptName || "") === WORKER_NAME);
+    const effectiveRows = selectedRows.length ? selectedRows : (availableWorkers.length === 1 ? rows : []);
     const daily = new Map();
 
-    for (const row of rows) {
+    for (const row of effectiveRows) {
       const date = String(row?.dimensions?.datetime || "").slice(0, 10);
       if (!date) continue;
       const current = daily.get(date) || { date, requests: 0, errors: 0, subrequests: 0, cpuP50: 0, cpuP99: 0 };
@@ -42,7 +45,19 @@ export async function handleCloudflareAnalytics(request, env) {
     summary.cpuP50 = series.length ? Math.max(...series.map(x => x.cpuP50)) : 0;
     summary.cpuP99 = series.length ? Math.max(...series.map(x => x.cpuP99)) : 0;
 
-    return json({ success: true, days, worker: WORKER_NAME, summary, series, source: "Cloudflare GraphQL Analytics API" });
+    if (!series.length) {
+      return json({
+        success: false,
+        error: availableWorkers.length
+          ? `برای Worker «${WORKER_NAME}» داده‌ای پیدا نشد. Workerهای موجود: ${availableWorkers.join(", ")}`
+          : "Cloudflare Analytics برای این بازه داده‌ای برنگرداند.",
+        availableWorkers,
+        worker: WORKER_NAME,
+        days
+      }, 404);
+    }
+
+    return json({ success: true, days, worker: WORKER_NAME, summary, series, source: "Cloudflare GraphQL Analytics API", availableWorkers });
   } catch (error) {
     console.error("Cloudflare analytics failed", error);
     return json({ success: false, error: error instanceof Error ? error.message : "دریافت آمار Cloudflare انجام نشد." }, 502);
@@ -52,22 +67,16 @@ export async function handleCloudflareAnalytics(request, env) {
 async function queryWorkerMetrics(env, start, end) {
   const rows = [];
   let cursor = new Date(start);
-
   while (cursor < end) {
     const chunkEnd = new Date(Math.min(cursor.getTime() + MAX_QUERY_DAYS * 86400000, end.getTime()));
-    const chunkRows = await queryWorkerMetricsChunk(env, cursor, chunkEnd);
-    rows.push(...chunkRows);
+    rows.push(...await queryWorkerMetricsChunk(env, cursor, chunkEnd));
     cursor = chunkEnd;
   }
-
   return rows;
 }
 
 async function queryWorkerMetricsChunk(env, start, end) {
-  // This query follows Cloudflare's current Workers Metrics GraphQL example.
-  // The API supports only a limited time window per request, so longer ranges
-  // are split into chunks above and merged by the Worker before returning.
-  const query = `query GetWorkersAnalytics($accountTag: string, $datetimeStart: string, $datetimeEnd: string, $scriptName: string) { viewer { accounts(filter: {accountTag: $accountTag}) { workersInvocationsAdaptive(limit: 10000, filter: { scriptName: $scriptName, datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd }) { sum { requests errors subrequests } quantiles { cpuTimeP50 cpuTimeP99 } dimensions { datetime status } } } } }`;
+  const query = `query GetWorkersAnalytics($accountTag: string, $datetimeStart: string, $datetimeEnd: string) { viewer { accounts(filter: {accountTag: $accountTag}) { workersInvocationsAdaptive(limit: 10000, filter: { datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd }) { sum { requests errors subrequests } quantiles { cpuTimeP50 cpuTimeP99 } dimensions { datetime scriptName status } } } } }`;
   const response = await fetch(CLOUDFLARE_GRAPHQL_URL, {
     method: "POST",
     headers: {
@@ -80,12 +89,10 @@ async function queryWorkerMetricsChunk(env, start, end) {
       variables: {
         accountTag: String(env.CLOUDFLARE_ACCOUNT_ID),
         datetimeStart: start.toISOString(),
-        datetimeEnd: end.toISOString(),
-        scriptName: WORKER_NAME
+        datetimeEnd: end.toISOString()
       }
     })
   });
-
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new Error(data?.errors?.[0]?.message || `Cloudflare API error (${response.status})`);
   if (data?.errors?.length) throw new Error(data.errors.map(x => x.message).join("; "));
