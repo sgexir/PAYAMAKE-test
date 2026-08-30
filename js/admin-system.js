@@ -106,6 +106,5 @@
     if (!(location.pathname === '/admin/' || location.pathname === '/admin/index.html')) return;
     $('#refreshSystemLogs')?.addEventListener('click', async () => { const b = $('#refreshSystemLogs'); b.disabled = true; const old = b.textContent; b.textContent = 'در حال بروزرسانی...'; try { await loadSystemLogs(1, true); } finally { b.disabled = false; b.textContent = old; } });
     installSmsTemplateHydration();
-    loadSystemLogs();
   });
 })();
