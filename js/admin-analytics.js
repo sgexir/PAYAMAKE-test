@@ -4,74 +4,39 @@
 
   function injectStyles() {
     if ($('#adminAnalyticsRuntimeStyles')) return;
-    const style = document.createElement('style');
-    style.id = 'adminAnalyticsRuntimeStyles';
-    style.textContent = `
-      .analytics-source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
-      .analytics-source{display:flex;flex-direction:column;gap:12px;padding:18px;border:1px solid #e5e9f0;border-radius:14px;background:#fff;box-sizing:border-box}
-      .analytics-source-head{display:flex;align-items:center;gap:10px}.analytics-source-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:#f2f4f7;font-weight:900}.analytics-source h3{margin:0;font-size:14px}.analytics-source p{margin:0;color:#667085;font-size:12px;line-height:1.8}.analytics-source-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}.analytics-source-actions a{display:inline-flex;align-items:center;justify-content:center;padding:8px 11px;border-radius:9px;border:1px solid #d0d5dd;background:#fff;color:#344054;text-decoration:none;font:inherit;font-size:12px}.analytics-source-actions a.primary{background:#2563eb;border-color:#2563eb;color:#fff}
-      .seo-check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}.seo-check{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border:1px solid #e5e9f0;border-radius:11px;background:#fff}.seo-check strong{font-size:12px}.seo-check small{display:block;color:#667085;font-size:11px;margin-top:4px}.seo-check-badge{padding:5px 9px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}.seo-ok{background:#ecfdf3;color:#027a48}.seo-warn{background:#fffaeb;color:#b54708}.seo-error{background:#fef3f2;color:#b42318}.analytics-note{margin-top:12px;padding:12px 14px;border-radius:10px;background:#f8fafc;color:#667085;font-size:11px;line-height:1.8}.analytics-updated{margin-top:10px;color:#667085;font-size:11px}
-      @media(max-width:800px){.analytics-source-grid,.seo-check-grid{grid-template-columns:1fr}}
-    `;
-    document.head.appendChild(style);
+    const style = document.createElement('style'); style.id='adminAnalyticsRuntimeStyles';
+    style.textContent=`
+      .analytics-source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}.analytics-source{display:flex;flex-direction:column;gap:12px;padding:18px;border:1px solid #e5e9f0;border-radius:14px;background:#fff;box-sizing:border-box}.analytics-source-head{display:flex;align-items:center;gap:10px}.analytics-source-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:#f2f4f7;font-weight:900}.analytics-source h3{margin:0;font-size:14px}.analytics-source p{margin:0;color:#667085;font-size:12px;line-height:1.8}.analytics-source-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}.analytics-source-actions a{display:inline-flex;align-items:center;justify-content:center;padding:8px 11px;border-radius:9px;border:1px solid #d0d5dd;background:#fff;color:#344054;text-decoration:none;font:inherit;font-size:12px}.analytics-source-actions a.primary{background:#2563eb;border-color:#2563eb;color:#fff}.seo-check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}.seo-check{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border:1px solid #e5e9f0;border-radius:11px;background:#fff}.seo-check strong{font-size:12px}.seo-check small{display:block;color:#667085;font-size:11px;margin-top:4px}.seo-check-badge{padding:5px 9px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}.seo-ok{background:#ecfdf3;color:#027a48}.seo-warn{background:#fffaeb;color:#b54708}.seo-error{background:#fef3f2;color:#b42318}.analytics-note{margin-top:12px;padding:12px 14px;border-radius:10px;background:#f8fafc;color:#667085;font-size:11px;line-height:1.8}.analytics-updated{margin-top:10px;color:#667085;font-size:11px}.bing-live-card{margin-top:14px}.bing-live-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.bing-live-controls{display:flex;align-items:center;gap:8px}.bing-live-controls select{padding:8px 10px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;font:inherit}.bing-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}.bing-metric{padding:14px;border:1px solid #e5e9f0;border-radius:12px;background:#fff}.bing-metric span{display:block;font-size:11px;color:#667085;margin-bottom:5px}.bing-metric strong{font-size:20px}.bing-chart{height:220px;display:flex;align-items:flex-end;gap:5px;padding:14px 8px;border:1px solid #e5e9f0;border-radius:12px;background:#fff;overflow:hidden}.bing-chart-col{height:100%;flex:1;min-width:7px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}.bing-bars{height:180px;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px}.bing-bars i,.bing-bars b{display:block;width:42%;min-height:3px;border-radius:4px 4px 0 0;background:#94a3b8}.bing-bars b{background:#2563eb}.bing-chart-col span{font-size:8px;color:#667085;white-space:nowrap}.bing-legend{display:flex;gap:16px;font-size:11px;color:#667085;margin:8px 2px}.bing-queries{margin-top:14px}.bing-crawl-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}.bing-crawl-item{padding:12px;border:1px solid #e5e9f0;border-radius:10px;background:#fff}.bing-crawl-item span{display:block;font-size:10px;color:#667085;margin-bottom:5px}.bing-crawl-item strong{font-size:16px}.bing-error{margin-top:10px;color:#b42318;font-size:12px}.analytics-empty{padding:24px;text-align:center;color:#667085;background:#f8fafc;border-radius:10px}.bing-site{font-size:11px;color:#667085}@media(max-width:800px){.analytics-source-grid,.seo-check-grid{grid-template-columns:1fr}.bing-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.bing-crawl-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bing-chart-col span{display:none}}
+    `; document.head.appendChild(style);
   }
 
   function render() {
-    const section = $('#analytics');
-    if (!section || section.dataset.analyticsReady === '1') return;
-    section.dataset.analyticsReady = '1';
-    injectStyles();
-    section.innerHTML = `
+    const section=$('#analytics'); if(!section||section.dataset.analyticsReady==='1')return; section.dataset.analyticsReady='1'; injectStyles();
+    section.innerHTML=`
       <div class="section-heading"><h2>تحلیل و SEO</h2><span>مرکز گزارش و پایش عملکرد سایت</span></div>
-      <div class="sms-section-card">
-        <div class="sms-section-title"><div><h3>منابع آمار</h3><span>سه منبع اصلی آمار PAYAMAKE از همین‌جا در دسترس هستند.</span></div><button id="refreshSeoChecks" class="admin-button outline small" type="button">بررسی مجدد SEO</button></div>
+      <div class="sms-section-card"><div class="sms-section-title"><div><h3>منابع آمار</h3><span>سه منبع اصلی آمار PAYAMAKE از همین‌جا در دسترس هستند.</span></div><button id="refreshSeoChecks" class="admin-button outline small" type="button">بررسی مجدد SEO</button></div>
         <div class="analytics-source-grid">
-          <article class="analytics-source"><div class="analytics-source-head"><div class="analytics-source-icon">CF</div><div><h3>Cloudflare Analytics</h3></div></div><p>آمار ترافیک، Requests، خطاها، Performance و Workers از داشبورد Cloudflare.</p><div class="analytics-source-actions"><a class="primary" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">باز کردن Cloudflare</a><a href="https://developers.cloudflare.com/analytics/" target="_blank" rel="noopener noreferrer">راهنما</a></div></article>
+          <article class="analytics-source"><div class="analytics-source-head"><div class="analytics-source-icon">CF</div><div><h3>Cloudflare Analytics</h3></div></div><p>آمار ترافیک، Requests، خطاها، Performance و Workers.</p><div class="analytics-source-actions"><a class="primary" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">باز کردن Cloudflare</a><a href="https://developers.cloudflare.com/analytics/" target="_blank" rel="noopener noreferrer">راهنما</a></div></article>
           <article class="analytics-source"><div class="analytics-source-head"><div class="analytics-source-icon">G</div><div><h3>Google Search Console</h3></div></div><p>Performance جستجو، Queryها، Pages، Indexing و وضعیت دیده‌شدن در Google.</p><div class="analytics-source-actions"><a class="primary" href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer">باز کردن Search Console</a><a href="https://developers.google.com/webmaster-tools/v1/searchanalytics/query" target="_blank" rel="noopener noreferrer">API</a></div></article>
-          <article class="analytics-source"><div class="analytics-source-head"><div class="analytics-source-icon">B</div><div><h3>Bing Webmaster</h3></div></div><p>Rank & Traffic، Keyword، Crawl و وضعیت ایندکس سایت در Bing.</p><div class="analytics-source-actions"><a class="primary" href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer">باز کردن Bing Webmaster</a><a href="https://learn.microsoft.com/en-us/bingwebmaster/" target="_blank" rel="noopener noreferrer">API</a></div></article>
+          <article class="analytics-source"><div class="analytics-source-head"><div class="analytics-source-icon">B</div><div><h3>Bing Webmaster</h3></div></div><p>اتصال OAuth فعال است و آمار واقعی Bing مستقیماً در همین پنل نمایش داده می‌شود.</p><div class="analytics-source-actions"><button id="bingConnectAction" class="admin-button outline small" type="button">بررسی اتصال</button><a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer">Bing Webmaster</a></div></article>
         </div>
-        <div class="analytics-note">فعلاً هیچ API Key، OAuth Token یا Credential جدیدی داخل کد قرار نگرفته است. این بخش منابع واقعی شما را یکجا در پنل قرار می‌دهد؛ اتصال داده زنده را می‌توان بعد از تعیین Credential امن هر سرویس اضافه کرد.</div>
       </div>
-      <div class="sms-section-card">
-        <div class="sms-section-title"><div><h3>سلامت پایه SEO</h3><span>بررسی مستقیم فایل‌ها و سیگنال‌های فنی سایت.</span></div></div>
-        <div id="seoChecks" class="seo-check-grid"><div class="sms-loading">در حال بررسی...</div></div>
-        <div id="seoUpdated" class="analytics-updated"></div>
-      </div>
-    `;
-    $('#refreshSeoChecks')?.addEventListener('click', () => checkSeo(true));
-    checkSeo(false);
+      <div class="sms-section-card bing-live-card"><div class="bing-live-head"><div><h3 style="margin:0 0 5px">Google / Bing Search Analytics</h3><div class="bing-site">Bing Webmaster: <span id="bingLiveSite">در حال دریافت...</span></div></div><div class="bing-live-controls"><select id="bingLiveDays"><option value="7">۷ روز</option><option value="30" selected>۳۰ روز</option><option value="90">۹۰ روز</option></select><button id="refreshBingLive" class="admin-button outline small" type="button">بروزرسانی</button></div></div><div id="bingLiveError" class="bing-error"></div><div id="bingLiveMetrics" class="bing-metrics"></div><div><strong style="font-size:13px">روند کلیک و نمایش Bing</strong><div id="bingLiveChart" style="margin-top:8px"></div></div><div class="bing-queries"><strong style="font-size:13px">کلمات کلیدی برتر</strong><div id="bingLiveQueries" style="margin-top:8px"></div></div><div style="margin-top:14px"><strong style="font-size:13px">Crawl Stats</strong><div id="bingLiveCrawl" class="bing-crawl-grid"></div></div><div id="bingLiveUpdated" class="analytics-updated"></div></div>
+      <div class="sms-section-card"><div class="sms-section-title"><div><h3>سلامت پایه SEO</h3><span>بررسی مستقیم فایل‌ها و سیگنال‌های فنی سایت.</span></div></div><div id="seoChecks" class="seo-check-grid"><div class="sms-loading">در حال بررسی...</div></div><div id="seoUpdated" class="analytics-updated"></div></div>`;
+    $('#refreshSeoChecks')?.addEventListener('click',()=>checkSeo(true));
+    $('#refreshBingLive')?.addEventListener('click',loadBing);
+    $('#bingLiveDays')?.addEventListener('change',loadBing);
+    $('#bingConnectAction')?.addEventListener('click',()=>checkBingStatus(true));
+    checkSeo(false); checkBingStatus(false);
   }
 
-  async function check(path) {
-    try { const r = await fetch(path, { cache: 'no-store' }); return { ok: r.ok, status: r.status }; }
-    catch { return { ok: false, status: 0 }; }
-  }
+  async function check(path){try{const r=await fetch(path,{cache:'no-store'});return{ok:r.ok,status:r.status};}catch{return{ok:false,status:0};}}
+  async function checkSeo(notify){const box=$('#seoChecks');if(!box)return;box.innerHTML='<div class="sms-loading">در حال بررسی...</div>';const [robots,sitemap]=await Promise.all([check('/robots.txt'),check('/sitemap.xml')]);const canonical=!!document.querySelector('link[rel="canonical"]'),description=!!document.querySelector('meta[name="description"]'),og=!!document.querySelector('meta[property="og:title"]');const results=[['robots.txt',robots.ok,robots.ok?'قابل دسترسی':`HTTP ${robots.status||'خطا'}`],['sitemap.xml',sitemap.ok,sitemap.ok?'قابل دسترسی':`HTTP ${sitemap.status||'خطا'}`],['Canonical',canonical,canonical?'وجود دارد':'یافت نشد'],['Meta description',description,description?'وجود دارد':'یافت نشد'],['Open Graph',og,og?'وجود دارد':'یافت نشد']];box.innerHTML=results.map(([name,ok,detail])=>`<article class="seo-check"><div><strong>${esc(name)}</strong><small>${esc(detail)}</small></div><span class="seo-check-badge ${ok?'seo-ok':'seo-error'}">${ok?'سالم':'نیازمند بررسی'}</span></article>`).join('');$('#seoUpdated').textContent=`آخرین بررسی: ${new Date().toLocaleString('fa-IR')}`;if(notify)document.dispatchEvent(new CustomEvent('payamake:toast',{detail:{text:'بررسی پایه SEO انجام شد.'}}));}
 
-  async function checkSeo(notify) {
-    const box = $('#seoChecks'); if (!box) return;
-    box.innerHTML = '<div class="sms-loading">در حال بررسی...</div>';
-    const [robots, sitemap] = await Promise.all([check('/robots.txt'), check('/sitemap.xml')]);
-    const canonical = !!document.querySelector('link[rel="canonical"]');
-    const description = !!document.querySelector('meta[name="description"]');
-    const og = !!document.querySelector('meta[property="og:title"]');
-    const results = [
-      ['robots.txt', robots.ok, robots.ok ? 'قابل دسترسی' : `HTTP ${robots.status || 'خطا'}`],
-      ['sitemap.xml', sitemap.ok, sitemap.ok ? 'قابل دسترسی' : `HTTP ${sitemap.status || 'خطا'}`],
-      ['Canonical', canonical, canonical ? 'وجود دارد' : 'یافت نشد'],
-      ['Meta description', description, description ? 'وجود دارد' : 'یافت نشد'],
-      ['Open Graph', og, og ? 'وجود دارد' : 'یافت نشد']
-    ];
-    box.innerHTML = results.map(([name, ok, detail]) => `<article class="seo-check"><div><strong>${esc(name)}</strong><small>${esc(detail)}</small></div><span class="seo-check-badge ${ok ? 'seo-ok' : 'seo-error'}">${ok ? 'سالم' : 'نیازمند بررسی'}</span></article>`).join('');
-    $('#seoUpdated').textContent = `آخرین بررسی: ${new Date().toLocaleString('fa-IR')}`;
-    if (notify) {
-      const event = new CustomEvent('payamake:toast', { detail: { text: 'بررسی پایه SEO انجام شد.' } });
-      document.dispatchEvent(event);
-    }
-  }
+  async function checkBingStatus(notify){try{const r=await fetch('/api/admin/analytics/bing/status',{credentials:'include',cache:'no-store'});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'خطا');if(!d.connected){$('#bingLiveError').textContent='اتصال Bing فعال نیست.';return;}loadBing();if(notify)document.dispatchEvent(new CustomEvent('payamake:toast',{detail:{text:'اتصال Bing فعال است.'}}));}catch(e){$('#bingLiveError').textContent=e.message||'خطا در بررسی اتصال Bing.';}}
+  const fmt=v=>new Intl.NumberFormat('fa-IR').format(Number(v)||0), fmtDate=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?String(v||''):d.toLocaleDateString('fa-IR',{month:'short',day:'numeric'});};
+  async function loadBing(){const err=$('#bingLiveError');if(err)err.textContent='';const b=$('#refreshBingLive');if(b){b.disabled=true;b.textContent='در حال دریافت...';}try{const days=Number($('#bingLiveDays')?.value||30);const r=await fetch(`/api/admin/analytics/bing/data?days=${days}`,{credentials:'include',cache:'no-store'});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'دریافت آمار Bing انجام نشد.');$('#bingLiveSite').textContent=d.siteUrl||'—';const s=d.summary||{};$('#bingLiveMetrics').innerHTML=[['کلیک',fmt(s.clicks)],['نمایش',fmt(s.impressions)],['CTR',`${Number(s.ctr||0).toFixed(1)}%`],['میانگین رتبه',Number(s.avgPosition||0).toFixed(1)]].map(x=>`<div class="bing-metric"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');const rows=Array.isArray(d.traffic)?d.traffic:[];if(!rows.length)$('#bingLiveChart').innerHTML='<div class="analytics-empty">هنوز داده‌ای برای این بازه موجود نیست.</div>';else{const max=Math.max(1,...rows.map(x=>Math.max(Number(x.clicks)||0,Number(x.impressions)||0)));$('#bingLiveChart').innerHTML=`<div class="bing-chart">${rows.slice(-30).map(x=>`<div class="bing-chart-col"><div class="bing-bars"><i style="height:${Math.max(4,(Number(x.impressions)||0)/max*100)}%" title="نمایش ${fmt(x.impressions)}"></i><b style="height:${Math.max(4,(Number(x.clicks)||0)/max*100)}%" title="کلیک ${fmt(x.clicks)}"></b></div><span>${esc(fmtDate(x.date))}</span></div>`).join('')}</div><div class="bing-legend"><span>■ نمایش</span><span>■ کلیک</span></div>`;}const q=(d.queries||[]).slice(0,10);$('#bingLiveQueries').innerHTML=q.length?`<div class="table-wrap"><table><thead><tr><th>کلمه کلیدی</th><th>کلیک</th><th>نمایش</th><th>CTR</th><th>رتبه</th></tr></thead><tbody>${q.map(x=>`<tr><td>${esc(x.query)}</td><td>${fmt(x.clicks)}</td><td>${fmt(x.impressions)}</td><td>${Number(x.ctr||0).toFixed(1)}%</td><td>${Number(x.position||0).toFixed(1)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="analytics-empty">داده کلمات کلیدی موجود نیست.</div>';const c=d.crawl?.[d.crawl.length-1]||{};$('#bingLiveCrawl').innerHTML=[['در ایندکس',c.inIndex],['Crawl شده',c.crawledPages],['خطای Crawl',c.crawlErrors],['4xx',c.code4xx],['5xx',c.code5xx]].map(x=>`<div class="bing-crawl-item"><span>${x[0]}</span><strong>${fmt(x[1])}</strong></div>`).join('');$('#bingLiveUpdated').textContent=`آخرین بروزرسانی: ${new Date().toLocaleString('fa-IR')}`;}catch(e){if(err)err.textContent=e.message||'خطا در دریافت آمار Bing.';}finally{if(b){b.disabled=false;b.textContent='بروزرسانی';}}}
 
-  document.addEventListener('DOMContentLoaded', () => {
-    if (location.pathname !== '/admin/' && location.pathname !== '/admin/index.html') return;
-    render();
-  });
-  window.initPayamakeAnalytics = render;
+  document.addEventListener('DOMContentLoaded',()=>{if(location.pathname!=='/admin/'&&location.pathname!=='/admin/index.html')return;render();});
+  window.initPayamakeAnalytics=render;
 })();
