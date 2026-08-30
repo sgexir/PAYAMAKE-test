@@ -21,7 +21,8 @@ export default {
       const contentType = response.headers.get("content-type") || "";
       if (contentType.includes("text/html")) {
         let html = await response.text();
-        if (!html.includes("admin-cloudflare.js")) html = html.replace("</body>", '<script src="../js/admin-cloudflare.js"></script></body>');
+        html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-cloudflare\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
+        html = html.replace("</body>", '<script src="../js/admin-cloudflare.js?v=2"></script></body>');
         return new Response(html, { status: response.status, statusText: response.statusText, headers: response.headers });
       }
       return response;
