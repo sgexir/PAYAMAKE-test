@@ -22,8 +22,8 @@ export default {
       if (contentType.includes("text/html")) {
         let html = await response.text();
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-analytics\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
-        html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-cloudflare\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
-        html = html.replace("</body>", '<script src="../js/admin-analytics.js?v=5"></script><script src="../js/admin-cloudflare-loader.js?v=1"></script></body>');
+        html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-cloudflare(?:-loader)?\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
+        html = html.replace("</body>", '<script src="../js/admin-analytics.js?v=6"></script><script src="../js/admin-cloudflare.js?v=6"></script></body>');
         const headers = new Headers(response.headers);
         headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
         headers.delete("ETag");
