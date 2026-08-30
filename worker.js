@@ -2,6 +2,7 @@ import { handleAdminAuth } from "./auth.js";
 import { handleAdminApi } from "./admin-api.js";
 import { handleLeadsApi } from "./leads-api.js";
 import { handleMonitoringApi, getMonitoringSetting, writeMonitoringError, ensureMonitoringSettings } from "./monitoring-api.js";
+import { handleHealthApi } from "./health-api.js";
 import { sendLeadSms, refreshPendingSmsDeliveries } from "./sms.js";
 
 const ALLOWED_ORIGIN = "https://staging.payamake.ir";
@@ -13,6 +14,11 @@ export default {
 
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(origin) });
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
+
+    if (url.pathname === "/api/admin/system/health") {
+      const response = await handleHealthApi(request, env);
+      return withCors(response, origin);
+    }
 
     if (url.pathname === "/api/admin/system/settings") {
       const adminResponse = await handleAdminApi(request, env);
