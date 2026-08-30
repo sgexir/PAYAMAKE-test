@@ -15,6 +15,18 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(origin) });
+
+    if (url.pathname === "/admin/" || url.pathname === "/admin/index.html") {
+      const response = await env.ASSETS.fetch(request);
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("text/html")) {
+        let html = await response.text();
+        if (!html.includes("admin-cloudflare.js")) html = html.replace("</body>", '<script src="../js/admin-cloudflare.js"></script></body>');
+        return new Response(html, { status: response.status, statusText: response.statusText, headers: response.headers });
+      }
+      return response;
+    }
+
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
 
     if (url.pathname === "/api/admin/analytics/bing/callback") {
