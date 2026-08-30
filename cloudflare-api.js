@@ -1,26 +1,26 @@
 const CLOUDFLARE_GRAPHQL_URL = "https://api.cloudflare.com/client/v4/graphql";
 const WORKER_NAME = "payamake-contact-staging";
-const MAX_QUERY_DAYS = 31;
+const MAX_QUERY_DAYS = 7;
 
 export async function handleCloudflareAnalytics(request, env) {
   const url = new URL(request.url);
   if (request.method !== "GET" || url.pathname !== "/api/admin/analytics/cloudflare/data") return json({ success: false, error: "Not Found" }, 404);
   const admin = await requireAdminSession(request, env);
   if (!admin) return json({ success: false, error: "احراز هویت لازم است." }, 401);
+
   const requestedDays = Number(url.searchParams.get("days"));
   const days = [7, 30, 90].includes(requestedDays) ? requestedDays : 30;
-  if (!env.CLOUDFLARE_ANALYTICS_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return json({ success: false, error: "Cloudflare Analytics هنوز تنظیم نشده است." }, 500);
+  if (!env.CLOUDFLARE_ANALYTICS_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) {
+    return json({ success: false, error: "Cloudflare Analytics هنوز تنظیم نشده است." }, 500);
+  }
 
   try {
     const end = new Date();
     const start = new Date(end.getTime() - days * 86400000);
     const rows = await queryWorkerMetrics(env, start, end);
-    const availableWorkers = [...new Set(rows.map(row => String(row?.dimensions?.scriptName || "")).filter(Boolean))];
-    const selectedRows = rows.filter(row => String(row?.dimensions?.scriptName || "") === WORKER_NAME);
-    const effectiveRows = selectedRows.length ? selectedRows : (availableWorkers.length === 1 ? rows : []);
     const daily = new Map();
 
-    for (const row of effectiveRows) {
+    for (const row of rows) {
       const date = String(row?.dimensions?.datetime || "").slice(0, 10);
       if (!date) continue;
       const current = daily.get(date) || { date, requests: 0, errors: 0, subrequests: 0, cpuP50: 0, cpuP99: 0 };
@@ -45,19 +45,16 @@ export async function handleCloudflareAnalytics(request, env) {
     summary.cpuP50 = series.length ? Math.max(...series.map(x => x.cpuP50)) : 0;
     summary.cpuP99 = series.length ? Math.max(...series.map(x => x.cpuP99)) : 0;
 
-    if (!series.length) {
-      return json({
-        success: false,
-        error: availableWorkers.length
-          ? `برای Worker «${WORKER_NAME}» داده‌ای پیدا نشد. Workerهای موجود: ${availableWorkers.join(", ")}`
-          : "Cloudflare Analytics برای این بازه داده‌ای برنگرداند.",
-        availableWorkers,
-        worker: WORKER_NAME,
-        days
-      }, 404);
-    }
-
-    return json({ success: true, days, worker: WORKER_NAME, summary, series, source: "Cloudflare GraphQL Analytics API", availableWorkers });
+    return json({
+      success: true,
+      days,
+      worker: WORKER_NAME,
+      summary,
+      series,
+      hasData: Boolean(series.length),
+      source: "Cloudflare GraphQL Analytics API",
+      message: series.length ? null : "Cloudflare برای این Worker در این بازه داده‌ای برنگرداند."
+    });
   } catch (error) {
     console.error("Cloudflare analytics failed", error);
     return json({ success: false, error: error instanceof Error ? error.message : "دریافت آمار Cloudflare انجام نشد." }, 502);
@@ -76,7 +73,26 @@ async function queryWorkerMetrics(env, start, end) {
 }
 
 async function queryWorkerMetricsChunk(env, start, end) {
-  const query = `query GetWorkersAnalytics($accountTag: string, $datetimeStart: string, $datetimeEnd: string) { viewer { accounts(filter: {accountTag: $accountTag}) { workersInvocationsAdaptive(limit: 10000, filter: { datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd }) { sum { requests errors subrequests } quantiles { cpuTimeP50 cpuTimeP99 } dimensions { datetime scriptName status } } } } }`;
+  const query = `query GetWorkersAnalytics($accountTag: string, $datetimeStart: string, $datetimeEnd: string, $scriptName: string) {
+    viewer {
+      accounts(filter: { accountTag: $accountTag }) {
+        workersInvocationsAdaptive(
+          limit: 10000,
+          filter: {
+            scriptName: $scriptName,
+            datetime_geq: $datetimeStart,
+            datetime_leq: $datetimeEnd
+          }
+          orderBy: [datetime_ASC]
+        ) {
+          sum { requests errors subrequests }
+          quantiles { cpuTimeP50 cpuTimeP99 }
+          dimensions { datetime scriptName status }
+        }
+      }
+    }
+  }`;
+
   const response = await fetch(CLOUDFLARE_GRAPHQL_URL, {
     method: "POST",
     headers: {
@@ -89,15 +105,18 @@ async function queryWorkerMetricsChunk(env, start, end) {
       variables: {
         accountTag: String(env.CLOUDFLARE_ACCOUNT_ID),
         datetimeStart: start.toISOString(),
-        datetimeEnd: end.toISOString()
+        datetimeEnd: end.toISOString(),
+        scriptName: WORKER_NAME
       }
     })
   });
+
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new Error(data?.errors?.[0]?.message || `Cloudflare API error (${response.status})`);
   if (data?.errors?.length) throw new Error(data.errors.map(x => x.message).join("; "));
+
   const account = data?.data?.viewer?.accounts?.[0];
-  if (!account) throw new Error("Cloudflare account analytics برای این Account ID داده‌ای برنگرداند.");
+  if (!account) throw new Error("Cloudflare Account Analytics برای این Account ID داده‌ای برنگرداند.");
   return account.workersInvocationsAdaptive || [];
 }
 
