@@ -3,20 +3,22 @@ const WORKER_NAME = "payamake-contact-staging";
 
 export async function handleCloudflareAnalytics(request, env) {
   const url = new URL(request.url);
-  if (request.method !== "GET" || url.pathname !== "/api/admin/analytics/cloudflare/data") {
-    return json({ success: false, error: "Not Found" }, 404);
-  }
+  if (request.method !== "GET" || url.pathname !== "/api/admin/analytics/cloudflare/data") return json({ success: false, error: "Not Found" }, 404);
   const admin = await requireAdminSession(request, env);
   if (!admin) return json({ success: false, error: "احراز هویت لازم است." }, 401);
   const requestedDays = Number(url.searchParams.get("days"));
   const days = [7, 30, 90].includes(requestedDays) ? requestedDays : 30;
-  if (!env.CLOUDFLARE_ANALYTICS_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) {
-    return json({ success: false, error: "Cloudflare Analytics هنوز تنظیم نشده است." }, 500);
-  }
+  if (!env.CLOUDFLARE_ANALYTICS_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return json({ success: false, error: "Cloudflare Analytics هنوز تنظیم نشده است." }, 500);
   try {
     const end = new Date();
     const start = new Date(end.getTime() - days * 86400000);
-    const rows = await queryWorkerMetrics(env, start, end);
+    const rows = [];
+    let cursor = start;
+    while (cursor < end) {
+      const chunkEnd = new Date(Math.min(cursor.getTime() + 30 * 86400000, end.getTime()));
+      rows.push(...await queryWorkerMetrics(env, cursor, chunkEnd));
+      cursor = new Date(chunkEnd.getTime() + 1000);
+    }
     const daily = new Map();
     for (const row of rows) {
       const date = String(row?.dimensions?.datetime || "").slice(0, 10);
@@ -42,15 +44,7 @@ export async function handleCloudflareAnalytics(request, env) {
 }
 
 async function queryWorkerMetrics(env, start, end) {
-  const query = `query WorkerAnalytics($accountTag: string!, $datetimeStart: string!, $datetimeEnd: string!, $scriptName: string!) {
-    viewer { accounts(filter: {accountTag: $accountTag}) {
-      workersInvocationsAdaptive(limit: 10000, filter: { scriptName: $scriptName, datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd }) {
-        sum { requests errors subrequests }
-        quantiles { cpuTimeP50 cpuTimeP99 }
-        dimensions { datetime status }
-      }
-    }}
-  }`;
+  const query = `query WorkerAnalytics($accountTag: string!, $datetimeStart: string!, $datetimeEnd: string!, $scriptName: string!) { viewer { accounts(filter: {accountTag: $accountTag}) { workersInvocationsAdaptive(limit: 10000, filter: { scriptName: $scriptName, datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd }) { sum { requests errors subrequests } quantiles { cpuTimeP50 cpuTimeP99 } dimensions { datetime status } } } } }`;
   const response = await fetch(CLOUDFLARE_GRAPHQL_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${env.CLOUDFLARE_ANALYTICS_TOKEN}`, Accept: "application/json", "Content-Type": "application/json" },
