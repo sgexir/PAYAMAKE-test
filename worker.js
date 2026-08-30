@@ -23,7 +23,7 @@ export default {
         let html = await response.text();
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-analytics\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-cloudflare(?:-loader)?\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
-        html = html.replace("</body>", '<script src="../js/admin-analytics.js?v=7"></script><script src="../js/admin-cloudflare.js?v=7"></script></body>');
+        html = html.replace("</body>", '<script src="../js/admin-analytics.js?v=8"></script><script src="../js/admin-cloudflare.js?v=8"></script></body>');
         const headers = new Headers(response.headers);
         headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
         headers.delete("ETag");
