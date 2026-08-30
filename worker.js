@@ -91,16 +91,25 @@ async function runDeliveryCron(env) {
     if (!env.DB) return;
     await ensureMonitoringSettings(env.DB);
     if ((await getMonitoringSetting(env.DB, "delivery_monitoring_enabled")) !== "1") return;
+
+    const intervalMinutes = Math.min(Math.max(Number(await getMonitoringSetting(env.DB, "cron_interval_minutes")) || 5, 1), 1440);
+    const lastRun = await env.DB.prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'cron_last_run_at' LIMIT 1").first();
+    if (lastRun?.setting_value) {
+      const ageMinutes = (Date.now() - Date.parse(String(lastRun.setting_value))) / 60000;
+      if (Number.isFinite(ageMinutes) && ageMinutes < intervalMinutes) return;
+    }
+    await env.DB.prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('cron_last_run_at', ?) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP").bind(new Date().toISOString()).run();
+
     const result = await refreshPendingSmsDeliveries(env);
     const hasErrors = Boolean(result.errors?.length);
     if (hasErrors) {
-      const details = { ...result, durationMs: Date.now() - startedAt };
+      const details = { ...result, durationMs: Date.now() - startedAt, intervalMinutes };
       await writeMonitoringError(env.DB, "warn", "sms_delivery_cron", "SMS delivery cron encountered provider errors", details);
     } else if ((await getMonitoringSetting(env.DB, "log_successful_crons")) === "1") {
       await ensureSystemLogsTable(env.DB);
-      await writeSystemLog(env.DB, "info", "sms_delivery_cron", "SMS delivery cron completed", { ...result, durationMs: Date.now() - startedAt });
+      await writeSystemLog(env.DB, "info", "sms_delivery_cron", "SMS delivery cron completed", { ...result, durationMs: Date.now() - startedAt, intervalMinutes });
     }
-    console.log("SMS delivery cron completed", result);
+    console.log("SMS delivery cron completed", { ...result, intervalMinutes });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("SMS delivery cron failed:", error);
