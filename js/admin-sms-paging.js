@@ -28,6 +28,14 @@
     s.dataset.payamakeLeads='1';
     document.head.appendChild(s);
   }
+  function loadAnalyticsModule(){
+    if(window.initPayamakeAnalytics || document.querySelector('script[data-payamake-analytics]')) { window.initPayamakeAnalytics?.(); return; }
+    const s=document.createElement('script');
+    s.src='../js/admin-analytics.js';
+    s.dataset.payamakeAnalytics='1';
+    s.onload=()=>window.initPayamakeAnalytics?.();
+    document.head.appendChild(s);
+  }
   function enforceMonitoringOrder(){
     const security=document.querySelector('#security');
     if(!security) return;
@@ -41,6 +49,7 @@
   document.addEventListener('DOMContentLoaded',()=>{
     if(location.pathname!=='/admin/'&&location.pathname!=='/admin/index.html')return;
     loadLeadModule();
+    loadAnalyticsModule();
     const refresh=()=>load(1,false);
     $('#refreshLogs')?.addEventListener('click',()=>load(1,true));
     $('#logProvider')?.addEventListener('change',refresh); $('#logStatus')?.addEventListener('change',refresh);
