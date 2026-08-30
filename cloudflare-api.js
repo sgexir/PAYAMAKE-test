@@ -1,5 +1,6 @@
 const CLOUDFLARE_GRAPHQL_URL = "https://api.cloudflare.com/client/v4/graphql";
 const WORKER_NAME = "payamake-contact-staging";
+const MAX_QUERY_DAYS = 31;
 
 export async function handleCloudflareAnalytics(request, env) {
   const url = new URL(request.url);
@@ -49,9 +50,24 @@ export async function handleCloudflareAnalytics(request, env) {
 }
 
 async function queryWorkerMetrics(env, start, end) {
-  // Cloudflare's current Workers Metrics GraphQL schema uses the accountTag,
-  // datetime range and scriptName filters shown in the official API examples.
-  const query = `query WorkerAnalytics($accountTag: string, $datetimeStart: string, $datetimeEnd: string, $scriptName: string) { viewer { accounts(filter: {accountTag: $accountTag}) { workersInvocationsAdaptive(limit: 10000, filter: { scriptName: $scriptName, datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd }) { sum { requests errors subrequests } quantiles { cpuTimeP50 cpuTimeP99 } dimensions { datetime status } } } } }`;
+  const rows = [];
+  let cursor = new Date(start);
+
+  while (cursor < end) {
+    const chunkEnd = new Date(Math.min(cursor.getTime() + MAX_QUERY_DAYS * 86400000, end.getTime()));
+    const chunkRows = await queryWorkerMetricsChunk(env, cursor, chunkEnd);
+    rows.push(...chunkRows);
+    cursor = chunkEnd;
+  }
+
+  return rows;
+}
+
+async function queryWorkerMetricsChunk(env, start, end) {
+  // This query follows Cloudflare's current Workers Metrics GraphQL example.
+  // The API supports only a limited time window per request, so longer ranges
+  // are split into chunks above and merged by the Worker before returning.
+  const query = `query GetWorkersAnalytics($accountTag: string, $datetimeStart: string, $datetimeEnd: string, $scriptName: string) { viewer { accounts(filter: {accountTag: $accountTag}) { workersInvocationsAdaptive(limit: 10000, filter: { scriptName: $scriptName, datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd }) { sum { requests errors subrequests } quantiles { cpuTimeP50 cpuTimeP99 } dimensions { datetime status } } } } }`;
   const response = await fetch(CLOUDFLARE_GRAPHQL_URL, {
     method: "POST",
     headers: {
@@ -73,7 +89,9 @@ async function queryWorkerMetrics(env, start, end) {
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new Error(data?.errors?.[0]?.message || `Cloudflare API error (${response.status})`);
   if (data?.errors?.length) throw new Error(data.errors.map(x => x.message).join("; "));
-  return data?.data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive || [];
+  const account = data?.data?.viewer?.accounts?.[0];
+  if (!account) throw new Error("Cloudflare account analytics برای این Account ID داده‌ای برنگرداند.");
+  return account.workersInvocationsAdaptive || [];
 }
 
 async function requireAdminSession(request, env) {
