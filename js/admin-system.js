@@ -56,6 +56,77 @@
     } catch (e) { if (box) box.innerHTML = `<div class="sms-empty">${esc(e.message)}</div>`; if (notify) toast(`دریافت لاگ‌های سیستم ناموفق بود: ${e.message}`, 'error'); }
   }
 
+  function installSystemLogAccordion() {
+    const card = $('.system-log-card');
+    if (!card || card.dataset.accordionReady === '1') return;
+    const title = card.querySelector('.sms-section-title');
+    const body = $('#systemLogsTable');
+    if (!title || !body) return;
+
+    const refresh = $('#refreshSystemLogs');
+    const titleArea = title.querySelector('div:first-child');
+    if (!titleArea) return;
+
+    const key = 'payamake_system_logs_open';
+    let open = localStorage.getItem(key) === '1';
+    card.dataset.accordionReady = '1';
+    card.classList.add('system-log-accordion');
+    titleArea.classList.add('system-log-accordion-trigger');
+    titleArea.setAttribute('role', 'button');
+    titleArea.setAttribute('tabindex', '0');
+    titleArea.setAttribute('aria-controls', 'systemLogsTable');
+
+    const sync = () => {
+      card.classList.toggle('is-open', open);
+      body.hidden = !open;
+      titleArea.setAttribute('aria-expanded', String(open));
+      const indicator = titleArea.querySelector('.system-log-accordion-indicator');
+      if (indicator) indicator.textContent = open ? 'بستن' : 'باز کردن';
+    };
+
+    const toggle = () => {
+      open = !open;
+      localStorage.setItem(key, open ? '1' : '0');
+      sync();
+    };
+
+    if (!titleArea.querySelector('.system-log-accordion-indicator')) {
+      const indicator = document.createElement('span');
+      indicator.className = 'system-log-accordion-indicator';
+      titleArea.appendChild(indicator);
+    }
+
+    titleArea.addEventListener('click', (event) => {
+      if (refresh && (event.target === refresh || refresh.contains(event.target))) return;
+      toggle();
+    });
+    titleArea.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggle();
+      }
+    });
+    sync();
+  }
+
+  function injectStyles() {
+    if ($('#systemLogAccordionStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'systemLogAccordionStyles';
+    style.textContent = `
+      .system-log-accordion .system-log-accordion-trigger{cursor:pointer;user-select:none;display:flex;align-items:center;gap:12px;min-width:0}
+      .system-log-accordion .system-log-accordion-trigger>div:first-child{min-width:0;flex:1}
+      .system-log-accordion .system-log-accordion-indicator{display:inline-flex;align-items:center;justify-content:center;min-width:74px;padding:6px 10px;border:1px solid rgba(15,23,42,.12);border-radius:9px;font-size:11px;font-weight:700;color:#475467;background:#f8fafc;flex:0 0 auto}
+      .system-log-accordion .system-log-accordion-indicator::before{content:'⌄';margin-left:5px;font-size:14px;transition:transform .18s ease}
+      .system-log-accordion.is-open .system-log-accordion-indicator::before{transform:rotate(180deg)}
+      .system-log-accordion .system-log-accordion-trigger:focus-visible{outline:3px solid rgba(37,99,235,.18);outline-offset:3px;border-radius:10px}
+      .system-log-accordion #systemLogsTable[hidden]{display:none!important}
+      .system-log-accordion .system-log-item pre{overflow:visible;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+      @media(max-width:700px){.system-log-accordion .system-log-accordion-trigger{align-items:flex-start}.system-log-accordion .system-log-accordion-indicator{min-width:64px}}
+    `;
+    document.head.appendChild(style);
+  }
+
   async function hydrateSmsTemplates() {
     const cards = $$('#templatesList .template-card');
     if (!cards.length) return;
@@ -104,6 +175,8 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     if (!(location.pathname === '/admin/' || location.pathname === '/admin/index.html')) return;
+    injectStyles();
+    setTimeout(installSystemLogAccordion, 50);
     $('#refreshSystemLogs')?.addEventListener('click', async () => { const b = $('#refreshSystemLogs'); b.disabled = true; const old = b.textContent; b.textContent = 'در حال بروزرسانی...'; try { await loadSystemLogs(1, true); } finally { b.disabled = false; b.textContent = old; } });
     installSmsTemplateHydration();
   });
