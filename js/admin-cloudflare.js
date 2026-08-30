@@ -37,6 +37,22 @@
     document.head.appendChild(s);
   }
 
+  function cleanupLegacyAnalytics() {
+    const section = $('#analytics');
+    if (!section) return;
+    section.querySelectorAll('.feature-card').forEach(card => {
+      const text = card.textContent || '';
+      if (text.includes('داشبورد تجمیعی آمار در مرحله بعد متصل می‌شود') || text.includes('شاخص‌های SEO و Search Console در مرحله بعد اضافه می‌شوند')) card.remove();
+    });
+    section.querySelectorAll('a').forEach(a => {
+      const text = a.textContent || '';
+      if (text.includes('باز کردن Cloudflare') || text.includes('راهنما') || text.includes('API') || text.includes('Search Console')) {
+        const parent = a.closest('.feature-card, .analytics-source-card, .analytics-provider-card');
+        if (parent && parent !== section) parent.remove();
+      }
+    });
+  }
+
   function svg(series, key, cls) {
     const vals = series.map(x => Number(x[key]) || 0);
     if (!vals.length) return '<div class="cf-runtime-loading">داده‌ای برای این بازه وجود ندارد.</div>';
@@ -70,13 +86,14 @@
         <div class="cf-runtime-meta">Worker: ${esc(d.worker||'—')} · منبع: Cloudflare GraphQL Analytics API · بروزرسانی: ${new Date().toLocaleString('fa-IR')}</div>`;
       if (notify && window.monitoringToast) window.monitoringToast('آمار Cloudflare بروزرسانی شد.');
     } catch(e) {
-      box.innerHTML = `<div class="cf-runtime-error"><strong>دریافت آمار Cloudflare ناموفق بود.</strong><br>${esc(e.message)}<br><small>اگر این پیام نمایش داده می‌شود، اتصال API فعال است ولی پاسخ Cloudflare خطا دارد.</small></div>`;
+      box.innerHTML = `<div class="cf-runtime-error"><strong>دریافت آمار Cloudflare ناموفق بود.</strong><br>${esc(e.message)}<br><small>اتصال پنل برقرار است؛ متن خطای API در بالا نمایش داده می‌شود.</small></div>`;
     }
   }
 
   function inject() {
     const section = $('#analytics');
     if (!section || $('#cloudflareAnalyticsCard')) return;
+    cleanupLegacyAnalytics();
     styles();
     const card=document.createElement('div');
     card.id='cloudflareAnalyticsCard';
@@ -103,6 +120,7 @@
 
   function init() {
     if (location.pathname !== '/admin/' && location.pathname !== '/admin/index.html') return;
+    cleanupLegacyAnalytics();
     inject();
     setTimeout(inject, 300);
     setTimeout(inject, 1000);
