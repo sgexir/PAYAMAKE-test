@@ -21,8 +21,9 @@ export default {
       const contentType = response.headers.get("content-type") || "";
       if (contentType.includes("text/html")) {
         let html = await response.text();
+        html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-analytics\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-cloudflare\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
-        html = html.replace("</body>", '<script src="../js/admin-cloudflare.js?v=2"></script></body>');
+        html = html.replace("</body>", '<script src="../js/admin-analytics.js?v=4"></script><script src="../js/admin-cloudflare.js?v=4"></script></body>');
         return new Response(html, { status: response.status, statusText: response.statusText, headers: response.headers });
       }
       return response;
