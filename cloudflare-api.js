@@ -9,17 +9,13 @@ export async function handleCloudflareAnalytics(request, env) {
   const requestedDays = Number(url.searchParams.get("days"));
   const days = [7, 30, 90].includes(requestedDays) ? requestedDays : 30;
   if (!env.CLOUDFLARE_ANALYTICS_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return json({ success: false, error: "Cloudflare Analytics هنوز تنظیم نشده است." }, 500);
+
   try {
     const end = new Date();
     const start = new Date(end.getTime() - days * 86400000);
-    const rows = [];
-    let cursor = start;
-    while (cursor < end) {
-      const chunkEnd = new Date(Math.min(cursor.getTime() + 30 * 86400000, end.getTime()));
-      rows.push(...await queryWorkerMetrics(env, cursor, chunkEnd));
-      cursor = new Date(chunkEnd.getTime() + 1000);
-    }
+    const rows = await queryWorkerMetrics(env, start, end);
     const daily = new Map();
+
     for (const row of rows) {
       const date = String(row?.dimensions?.datetime || "").slice(0, 10);
       if (!date) continue;
@@ -31,11 +27,20 @@ export async function handleCloudflareAnalytics(request, env) {
       current.cpuP99 = Math.max(current.cpuP99, Number(row?.quantiles?.cpuTimeP99 || 0));
       daily.set(date, current);
     }
-    const series = [...daily.values()].sort((a, b) => a.date.localeCompare(b.date)).map(item => ({ ...item, errorRate: item.requests ? (item.errors / item.requests) * 100 : 0 }));
-    const summary = series.reduce((acc, item) => ({ requests: acc.requests + item.requests, errors: acc.errors + item.errors, subrequests: acc.subrequests + item.subrequests }), { requests: 0, errors: 0, subrequests: 0 });
+
+    const series = [...daily.values()]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(item => ({ ...item, errorRate: item.requests ? (item.errors / item.requests) * 100 : 0 }));
+
+    const summary = series.reduce((acc, item) => ({
+      requests: acc.requests + item.requests,
+      errors: acc.errors + item.errors,
+      subrequests: acc.subrequests + item.subrequests,
+    }), { requests: 0, errors: 0, subrequests: 0 });
     summary.errorRate = summary.requests ? (summary.errors / summary.requests) * 100 : 0;
     summary.cpuP50 = series.length ? Math.max(...series.map(x => x.cpuP50)) : 0;
     summary.cpuP99 = series.length ? Math.max(...series.map(x => x.cpuP99)) : 0;
+
     return json({ success: true, days, worker: WORKER_NAME, summary, series, source: "Cloudflare GraphQL Analytics API" });
   } catch (error) {
     console.error("Cloudflare analytics failed", error);
@@ -44,12 +49,27 @@ export async function handleCloudflareAnalytics(request, env) {
 }
 
 async function queryWorkerMetrics(env, start, end) {
-  const query = `query WorkerAnalytics($accountTag: string!, $datetimeStart: string!, $datetimeEnd: string!, $scriptName: string!) { viewer { accounts(filter: {accountTag: $accountTag}) { workersInvocationsAdaptive(limit: 10000, filter: { scriptName: $scriptName, datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd }) { sum { requests errors subrequests } quantiles { cpuTimeP50 cpuTimeP99 } dimensions { datetime status } } } } }`;
+  // Cloudflare's current Workers Metrics GraphQL schema uses the accountTag,
+  // datetime range and scriptName filters shown in the official API examples.
+  const query = `query WorkerAnalytics($accountTag: string, $datetimeStart: string, $datetimeEnd: string, $scriptName: string) { viewer { accounts(filter: {accountTag: $accountTag}) { workersInvocationsAdaptive(limit: 10000, filter: { scriptName: $scriptName, datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd }) { sum { requests errors subrequests } quantiles { cpuTimeP50 cpuTimeP99 } dimensions { datetime status } } } } }`;
   const response = await fetch(CLOUDFLARE_GRAPHQL_URL, {
     method: "POST",
-    headers: { Authorization: `Bearer ${env.CLOUDFLARE_ANALYTICS_TOKEN}`, Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify({ query, variables: { accountTag: String(env.CLOUDFLARE_ACCOUNT_ID), datetimeStart: start.toISOString(), datetimeEnd: end.toISOString(), scriptName: WORKER_NAME } })
+    headers: {
+      Authorization: `Bearer ${env.CLOUDFLARE_ANALYTICS_TOKEN}`,
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      query,
+      variables: {
+        accountTag: String(env.CLOUDFLARE_ACCOUNT_ID),
+        datetimeStart: start.toISOString(),
+        datetimeEnd: end.toISOString(),
+        scriptName: WORKER_NAME
+      }
+    })
   });
+
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new Error(data?.errors?.[0]?.message || `Cloudflare API error (${response.status})`);
   if (data?.errors?.length) throw new Error(data.errors.map(x => x.message).join("; "));
