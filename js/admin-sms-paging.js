@@ -1,6 +1,6 @@
 (() => {
   const $ = (s) => document.querySelector(s);
-  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const esc = (v) => String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
   const label = p => p === 'lead_customer' ? 'پیامک مشتری' : p === 'lead_admin' ? 'پیامک مدیر' : p;
   const status = v => `<span class="sms-status ${esc(v)}">${({sent:'ارسال شده',failed:'ناموفق',pending:'در انتظار',delivered:'دلیور شده',unknown:'نامشخص',expired:'منقضی'}[v] || esc(v || '—'))}</span>`;
   const pageUi = (pages, page) => {
@@ -21,8 +21,16 @@
       box.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>load(Number(b.dataset.page)));
     } catch(e) { box.innerHTML=`<div class="sms-empty">${esc(e.message)}</div>`; }
   }
+  function loadLeadModule(){
+    if(window.loadPayamakeLeads || document.querySelector('script[data-payamake-leads]')) return;
+    const s=document.createElement('script');
+    s.src='../js/admin-leads.js';
+    s.dataset.payamakeLeads='1';
+    document.head.appendChild(s);
+  }
   document.addEventListener('DOMContentLoaded',()=>{
     if(location.pathname!=='/admin/'&&location.pathname!=='/admin/index.html')return;
+    loadLeadModule();
     const refresh=()=>load(1,false);
     $('#refreshLogs')?.addEventListener('click',()=>load(1,true));
     $('#logProvider')?.addEventListener('change',refresh); $('#logStatus')?.addEventListener('change',refresh);
