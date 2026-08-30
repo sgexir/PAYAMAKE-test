@@ -28,6 +28,16 @@
     s.dataset.payamakeLeads='1';
     document.head.appendChild(s);
   }
+  function enforceMonitoringOrder(){
+    const security=document.querySelector('#security');
+    if(!security) return;
+    const health=document.querySelector('#systemHealthCard');
+    const settings=document.querySelector('#monitoringSettingsCard');
+    const logs=security.querySelector('.system-log-card');
+    if(health) security.appendChild(health);
+    if(settings) security.appendChild(settings);
+    if(logs) security.appendChild(logs);
+  }
   document.addEventListener('DOMContentLoaded',()=>{
     if(location.pathname!=='/admin/'&&location.pathname!=='/admin/index.html')return;
     loadLeadModule();
@@ -35,5 +45,6 @@
     $('#refreshLogs')?.addEventListener('click',()=>load(1,true));
     $('#logProvider')?.addEventListener('change',refresh); $('#logStatus')?.addEventListener('change',refresh);
     const tab=document.querySelector('.sms-tab[data-tab="logs"]'); if(tab) tab.addEventListener('click',()=>setTimeout(()=>load(1,false),0));
+    setTimeout(enforceMonitoringOrder,700);
   });
 })();
