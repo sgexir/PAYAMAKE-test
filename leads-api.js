@@ -6,7 +6,7 @@ export async function handleLeadsApi(request, env) {
   try {
     if (request.method === "GET" && url.pathname === "/api/admin/leads") return listLeads(request, env.DB);
     if (request.method === "GET" && /^\/api\/admin\/leads\/\d+$/.test(url.pathname)) return getLead(url.pathname.split("/").pop(), env.DB);
-    if (request.method === "POST" && /^\/api\/admin\/leads\/\d+$/.test(url.pathname)) return updateLead(request, url.pathname.split("/").pop(), env.DB);
+    if (request.method === "POST" && /^\/api\/admin\/leads\/\d+$/.test(url.pathname)) return updateLead(request, url.pathname.split("/").pop(), env.DB, admin);
     return json({ success: false, error: "Not Found" }, 404);
   } catch (error) {
     console.error("Leads API error:", error);
@@ -35,18 +35,36 @@ async function listLeads(request, db) {
 
 async function getLead(id, db) {
   const lead = await db.prepare(`SELECT id, full_name, phone, brand, type, description, source, lead_status, admin_notes, customer_sms_status, admin_sms_status, created_at, updated_at FROM leads WHERE id = ?`).bind(Number(id)).first();
-  return lead ? json({ success: true, lead }) : json({ success: false, error: "درخواست پیدا نشد." }, 404);
+  if (!lead) return json({ success: false, error: "درخواست پیدا نشد." }, 404);
+  const activity = await db.prepare(`SELECT a.id, a.activity_type, a.old_status, a.new_status, a.note, a.created_at, a.admin_id, COALESCE(ad.full_name, 'سیستم') AS admin_name FROM lead_activity a LEFT JOIN admins ad ON ad.id = a.admin_id WHERE a.lead_id = ? ORDER BY a.created_at DESC, a.id DESC`).bind(Number(id)).all();
+  return json({ success: true, lead, activity: activity.results || [] });
 }
 
-async function updateLead(request, id, db) {
+async function updateLead(request, id, db, admin) {
+  const leadId = Number(id);
   const body = await readJson(request);
   const allowed = ["new", "in_progress", "done", "rejected"];
   const status = body?.status === undefined ? undefined : String(body.status);
   if (status !== undefined && !allowed.includes(status)) return json({ success: false, error: "وضعیت نامعتبر است." }, 400);
   if (status === undefined && body?.adminNotes === undefined) return json({ success: false, error: "تغییری ارسال نشده است." }, 400);
-  if (status !== undefined) await db.prepare(`UPDATE leads SET lead_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(status, Number(id)).run();
-  if (body?.adminNotes !== undefined) await db.prepare(`UPDATE leads SET admin_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(String(body.adminNotes || "").trim() || null, Number(id)).run();
-  return getLead(id, db);
+
+  const current = await db.prepare(`SELECT lead_status, admin_notes FROM leads WHERE id = ?`).bind(leadId).first();
+  if (!current) return json({ success: false, error: "درخواست پیدا نشد." }, 404);
+
+  if (status !== undefined && status !== current.lead_status) {
+    await db.prepare(`UPDATE leads SET lead_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(status, leadId).run();
+    await db.prepare(`INSERT INTO lead_activity (lead_id, admin_id, activity_type, old_status, new_status) VALUES (?, ?, 'status_changed', ?, ?)`).bind(leadId, admin.admin_id, current.lead_status, status).run();
+  }
+
+  if (body?.adminNotes !== undefined) {
+    const note = String(body.adminNotes || "").trim() || null;
+    if (note !== current.admin_notes) {
+      await db.prepare(`UPDATE leads SET admin_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(note, leadId).run();
+      await db.prepare(`INSERT INTO lead_activity (lead_id, admin_id, activity_type, note) VALUES (?, ?, 'note_updated', ?)`).bind(leadId, admin.admin_id, note).run();
+    }
+  }
+
+  return getLead(leadId, db);
 }
 
 async function requireAdminSession(request, env) {
