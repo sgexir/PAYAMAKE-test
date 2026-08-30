@@ -3,7 +3,8 @@ const DEFAULTS = {
   system_error_logging_enabled: "1",
   log_successful_crons: "0",
   duplicate_error_suppression_enabled: "1",
-  error_cooldown_minutes: "30"
+  error_cooldown_minutes: "30",
+  cron_interval_minutes: "5"
 };
 
 export async function handleMonitoringApi(request, env) {
@@ -19,6 +20,7 @@ export async function handleMonitoringApi(request, env) {
       let value = String(rawValue);
       if (["delivery_monitoring_enabled", "system_error_logging_enabled", "log_successful_crons", "duplicate_error_suppression_enabled"].includes(key)) value = value === "1" || value === "true" ? "1" : "0";
       if (key === "error_cooldown_minutes") value = String(Math.min(Math.max(Number(rawValue) || 30, 1), 1440));
+      if (key === "cron_interval_minutes") value = String(Math.min(Math.max(Number(rawValue) || 5, 1), 1440));
       await env.DB.prepare("INSERT INTO system_settings (setting_key, setting_value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP").bind(key, value).run();
     }
     return json({ success: true, settings: await readSettings(env.DB) });
