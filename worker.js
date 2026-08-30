@@ -4,6 +4,7 @@ import { handleLeadsApi } from "./leads-api.js";
 import { handleMonitoringApi, getMonitoringSetting, writeMonitoringError, ensureMonitoringSettings } from "./monitoring-api.js";
 import { handleHealthApi } from "./health-api.js";
 import { handleBingApi } from "./bing-api.js";
+import { handleCloudflareAnalytics } from "./cloudflare-api.js";
 import { sendLeadSms, refreshPendingSmsDeliveries } from "./sms.js";
 
 const ALLOWED_ORIGIN = "https://staging.payamake.ir";
@@ -23,6 +24,11 @@ export default {
 
     if (url.pathname.startsWith("/api/admin/analytics/bing/")) {
       const response = await handleBingApi(request, env);
+      return withCors(response, origin);
+    }
+
+    if (url.pathname === "/api/admin/analytics/cloudflare/data") {
+      const response = await handleCloudflareAnalytics(request, env);
       return withCors(response, origin);
     }
 
