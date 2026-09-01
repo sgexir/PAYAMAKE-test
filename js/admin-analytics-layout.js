@@ -15,7 +15,6 @@
 
     if (!seo || !site || !cloudflare || !bing || !sourceGrid || !sourceCard) return false;
 
-    // Keep the existing analytics data/API code untouched; only rearrange its UI.
     if (!bing.dataset.sourcesMoved) {
       const details = document.createElement('details');
       details.className = 'analytics-sources-details';
@@ -39,13 +38,13 @@
       bing.dataset.sourcesMoved = '1';
     }
 
-    // Exact requested order.
-    const heading = section.querySelector('.section-heading');
-    if (heading) section.appendChild(heading);
+    // Exact requested order: SEO, site traffic, Worker analytics, search analytics.
     section.appendChild(seo);
     section.appendChild(site);
     section.appendChild(cloudflare);
     section.appendChild(bing);
+    const heading = section.querySelector('.section-heading');
+    if (heading) section.insertBefore(heading, section.firstChild);
     return true;
   };
 
