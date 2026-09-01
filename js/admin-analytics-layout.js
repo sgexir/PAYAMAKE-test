@@ -33,15 +33,19 @@
         body.appendChild(actions);
       }
       body.appendChild(sourceGrid);
+
+      // Google / Bing Search Analytics belongs inside the collapsed Sources section.
+      body.appendChild(bing);
       sourceCard.remove();
       section.appendChild(details);
+    } else if (bing.parentElement !== details.querySelector('.analytics-sources-details-body')) {
+      details.querySelector('.analytics-sources-details-body')?.appendChild(bing);
     }
 
-    // Exact requested order: SEO, site traffic, Worker analytics, Google/Bing, Sources.
+    // Exact requested outer order: SEO, site traffic, Worker analytics, Sources.
     section.appendChild(seo);
     section.appendChild(site);
     section.appendChild(cloudflare);
-    section.appendChild(bing);
     section.appendChild(details);
 
     const heading = section.querySelector('.section-heading');
@@ -66,6 +70,7 @@
       .analytics-sources-details-body{padding:0 18px 18px;border-top:1px solid #e5e9f0}
       .analytics-sources-actions{display:flex;justify-content:flex-start;padding-top:14px;margin-bottom:4px}
       .analytics-sources-details .analytics-source-grid{margin-top:12px}
+      .analytics-sources-details .bing-live-card{margin-top:18px}
     `;
     document.head.appendChild(style);
   };
