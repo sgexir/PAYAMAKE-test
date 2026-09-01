@@ -8,7 +8,8 @@ export async function handleCloudflareAnalytics(request, env) {
   if (request.method !== "GET") return json({ success: false, error: "Method Not Allowed" }, 405);
   const admin = await requireAdminSession(request, env);
   if (!admin) return json({ success: false, error: "احراز هویت لازم است." }, 401);
-  const days = [7, 30, 90].includes(Number(url.searchParams.get("days"))) ? Number(url.searchParams.get("days")) : 30;
+  const allowedDays = [1, 3, 7, 30, 90, 180];
+  const days = allowedDays.includes(Number(url.searchParams.get("days"))) ? Number(url.searchParams.get("days")) : 30;
   if (!env.CLOUDFLARE_ANALYTICS_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return json({ success:false, error:"Cloudflare Analytics هنوز تنظیم نشده است." },500);
   try {
     const end = new Date();
@@ -54,7 +55,7 @@ async function queryWebAnalytics(env,start,end){
     cursor = chunkEnd;
   }
 
-  const dailyMap=new Map(), pages=new Map(), countries=new Map(), devices=new Map();
+  const dailyMap=new Map(), pages=new Map(), countries=new Map(), devices=new Map(), browsers=new Map(), operatingSystems=new Map(), referrers=new Map();
   let pageViews=0, visits=0;
   for(const row of rows){
     const count=Number(row?.count||0), rowVisits=Number(row?.sum?.visits||0);
@@ -64,15 +65,19 @@ async function queryWebAnalytics(env,start,end){
     const path=String(row?.dimensions?.clientRequestPath||"").trim(); if(path){const item=pages.get(path)||{path,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;pages.set(path,item);}
     const country=String(row?.dimensions?.clientCountryName||"").trim(); if(country){const item=countries.get(country)||{country,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;countries.set(country,item);}
     const device=String(row?.dimensions?.clientDeviceType||"").trim(); if(device){const item=devices.get(device)||{device,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;devices.set(device,item);}
+    const browser=String(row?.dimensions?.userAgentBrowser||"").trim(); if(browser){const item=browsers.get(browser)||{browser,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;browsers.set(browser,item);}
+    const os=String(row?.dimensions?.userAgentOS||"").trim(); if(os){const item=operatingSystems.get(os)||{os,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;operatingSystems.set(os,item);}
+    const referrer=String(row?.dimensions?.clientRefererHost||"").trim(); if(referrer){const item=referrers.get(referrer)||{referrer,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;referrers.set(referrer,item);}
   }
   const series=[...dailyMap.values()].sort((a,b)=>a.date.localeCompare(b.date));
-  return {summary:{pageViews,visits},series,topPages:[...pages.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,10),countries:[...countries.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,10),devices:[...devices.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,6),hasData:series.length>0};
+  const rank=(map,key,limit)=>[...map.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,limit);
+  return {summary:{pageViews,visits},series,topPages:rank(pages,'path',15),countries:rank(countries,'country',15),devices:rank(devices,'device',10),browsers:rank(browsers,'browser',10),operatingSystems:rank(operatingSystems,'os',10),referrers:rank(referrers,'referrer',15),hasData:series.length>0};
 }
 
 async function queryWebAnalyticsChunk(env,start,end){
   const accountTag=String(env.CLOUDFLARE_ACCOUNT_ID).replace(/[^a-zA-Z0-9_-]/g,"");
   const filter=`datetime_geq: "${start.toISOString()}", datetime_lt: "${end.toISOString()}", clientRequestHTTPHost: "${SITE_HOST}", requestSource: "eyeball"`;
-  const query=`query { viewer { accounts(filter: { accountTag: "${accountTag}" }) { traffic: httpRequestsAdaptiveGroups(limit: 10000, orderBy: [count_DESC], filter: { ${filter} }) { count dimensions { date clientRequestPath clientCountryName clientDeviceType } sum { visits } } } } }`;
+  const query=`query { viewer { accounts(filter: { accountTag: "${accountTag}" }) { traffic: httpRequestsAdaptiveGroups(limit: 10000, orderBy: [count_DESC], filter: { ${filter} }) { count dimensions { date clientRequestPath clientCountryName clientDeviceType userAgentBrowser userAgentOS clientRefererHost } sum { visits } } } } }`;
   const response=await fetch(CLOUDFLARE_GRAPHQL_URL,{method:"POST",headers:{Authorization:`Bearer ${env.CLOUDFLARE_ANALYTICS_TOKEN}`,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({query})});
   const data=await response.json().catch(()=>null);
   if(!response.ok) throw new Error(data?.errors?.[0]?.message||`Cloudflare API error (${response.status})`);
@@ -103,4 +108,4 @@ async function queryWorkerMetricsChunk(env,start,end){
 async function requireAdminSession(request,env){const token=readCookie(request.headers.get("Cookie"),"payamake_session");if(!token||!env.DB)return null;const tokenHash=await sha256(decodeURIComponent(token));return env.DB.prepare(`SELECT s.admin_id,a.full_name,a.email,a.is_active FROM admin_sessions s JOIN admins a ON a.id=s.admin_id WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>CURRENT_TIMESTAMP AND a.is_active=1 LIMIT 1`).bind(tokenHash).first();}
 function readCookie(header,name){for(const item of String(header||"").split(";")){const [key,...rest]=item.trim().split("=");if(key===name)return rest.join("=");}return null;}
 async function sha256(value){const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(String(value)));return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join("");}
-function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json; charset=UTF-8","Cache-Control":"no-store"}});}
+function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json; charset=UTF-8","Cache-Control":"no-store"}});
