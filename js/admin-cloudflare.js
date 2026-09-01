@@ -59,6 +59,9 @@
   function inject() {
     const section = $('#analytics');
     if (!section) return false;
+    // admin-analytics.js rebuilds #analytics.innerHTML. Never mount Cloudflare
+    // before that render is complete, otherwise Bing's render can remove this card.
+    if (section.dataset.analyticsReady !== '1') return false;
     addStyles();
     let card = $('#cloudflareAnalyticsCard');
     if (card) return true;
