@@ -8,12 +8,25 @@ export async function handleCloudflareAnalytics(request, env) {
   if (request.method !== "GET") return json({ success: false, error: "Method Not Allowed" }, 405);
   const admin = await requireAdminSession(request, env);
   if (!admin) return json({ success: false, error: "احراز هویت لازم است." }, 401);
-  const allowedDays = [1, 3, 7, 30, 90, 180];
+  const allowedDays = [1, 2, 3, 7, 30, 90, 180];
   const days = allowedDays.includes(Number(url.searchParams.get("days"))) ? Number(url.searchParams.get("days")) : 30;
+  const period = url.searchParams.get("period");
   if (!env.CLOUDFLARE_ANALYTICS_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return json({ success:false, error:"Cloudflare Analytics هنوز تنظیم نشده است." },500);
   try {
-    const end = new Date();
-    const start = new Date(end.getTime() - days * 86400000);
+    const now = new Date();
+    let start;
+    let end = now;
+    if (period === "today" || period === "yesterday") {
+      const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      if (period === "today") {
+        start = todayStart;
+      } else {
+        end = todayStart;
+        start = new Date(todayStart.getTime() - 86400000);
+      }
+    } else {
+      start = new Date(end.getTime() - days * 86400000);
+    }
     if (url.pathname === "/api/admin/analytics/cloudflare/data") {
       const rows = await queryWorkerMetrics(env, start, end);
       const daily = new Map();
@@ -37,7 +50,7 @@ export async function handleCloudflareAnalytics(request, env) {
     }
     if (url.pathname === "/api/admin/analytics/cloudflare/web/data") {
       const data = await queryWebAnalytics(env, start, end);
-      return json({success:true,days,site:SITE_HOST,...data,source:"Cloudflare HTTP Analytics (eyeball traffic)"});
+      return json({success:true,days,period:period||null,site:SITE_HOST,...data,source:"Cloudflare HTTP Analytics (eyeball traffic)"});
     }
     return json({ success:false, error:"Not Found" },404);
   } catch (error) {
