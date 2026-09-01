@@ -18,6 +18,13 @@
         layout.defer = true;
         document.body.appendChild(layout);
       }
+      if (!document.querySelector('script[data-seo-checker-runtime]')) {
+        const seo = document.createElement('script');
+        seo.src = '../js/admin-seo-checker.js?v=1';
+        seo.dataset.seoCheckerRuntime = '1';
+        seo.defer = true;
+        document.body.appendChild(seo);
+      }
       if (!document.querySelector('style[data-site-traffic-collapse]')) {
         const style = document.createElement('style');
         style.dataset.siteTrafficCollapse = '1';
