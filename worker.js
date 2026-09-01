@@ -17,16 +17,32 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(origin) });
 
     if (url.pathname === "/admin/" || url.pathname === "/admin/index.html") {
-      const response = await env.ASSETS.fetch(request);
+      const cache = caches.default;
+      await cache.delete(request);
+
+      const assetUrl = new URL(request.url);
+      assetUrl.pathname = "/admin/index.html";
+      assetUrl.search = `?admin-build=${Date.now()}`;
+
+      const assetRequest = new Request(assetUrl.toString(), {
+        method: "GET",
+        headers: request.headers,
+      });
+
+      const response = await env.ASSETS.fetch(assetRequest);
       const contentType = response.headers.get("content-type") || "";
       if (contentType.includes("text/html")) {
         let html = await response.text();
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-analytics\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-cloudflare(?:-loader)?\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
-        html = html.replace("</body>", '<script src="../js/admin-analytics.js?v=8"></script><script src="../js/admin-cloudflare.js?v=8"></script></body>');
+        const adminScripts = '<script src="../js/admin-analytics.js?v=9"></script><script src="../js/admin-cloudflare.js?v=9"></script>';
+        if (html.includes("</body>")) html = html.replace("</body>", `${adminScripts}</body>`);
+        else html += adminScripts;
         const headers = new Headers(response.headers);
-        headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+        headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+        headers.set("Pragma", "no-cache");
         headers.delete("ETag");
+        headers.delete("Expires");
         return new Response(html, { status: response.status, statusText: response.statusText, headers });
       }
       return response;
