@@ -6,6 +6,8 @@
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
   const num = (v) => new Intl.NumberFormat('fa-IR').format(Math.round(Number(v) || 0));
   const pct = (v) => `${(Number(v) || 0).toFixed(2)}٪`;
+  const cpu = (v) => `${Number(v || 0).toFixed(1)} µs`;
+  const memory = (v) => { const n=Number(v)||0; if(n>=1073741824)return `${(n/1073741824).toFixed(1)} GB`; if(n>=1048576)return `${(n/1048576).toFixed(1)} MB`; if(n>=1024)return `${(n/1024).toFixed(1)} KB`; return `${Math.round(n)} B`; };
 
   function addStyles() {
     if ($('#cfAnalyticsRuntimeStyles')) return;
@@ -47,6 +49,10 @@
         `<div class="cf-runtime-stat"><span>خطاها</span><strong>${num(summary.errors)}</strong></div>` +
         `<div class="cf-runtime-stat"><span>نرخ خطا</span><strong>${pct(summary.errorRate)}</strong></div>` +
         `<div class="cf-runtime-stat"><span>Subrequests</span><strong>${num(summary.subrequests)}</strong></div>` +
+        `<div class="cf-runtime-stat"><span>CPU P50</span><strong>${cpu(summary.cpuP50)}</strong></div>` +
+        `<div class="cf-runtime-stat"><span>CPU P99</span><strong>${cpu(summary.cpuP99)}</strong></div>` +
+        `<div class="cf-runtime-stat"><span>Memory P50</span><strong>${memory(summary.memoryP50)}</strong></div>` +
+        `<div class="cf-runtime-stat"><span>Memory P99</span><strong>${memory(summary.memoryP99)}</strong></div>` +
         '</div>' +
         '<div class="cf-runtime-chart"><h4>روند درخواست‌ها</h4>' + makeChart(series, 'requests', 'cf-runtime-line') + '</div>' +
         '<div class="cf-runtime-chart"><h4>روند خطاها</h4>' + makeChart(series, 'errors', 'cf-runtime-error-line') + '</div>' +
@@ -59,8 +65,6 @@
   function inject() {
     const section = $('#analytics');
     if (!section) return false;
-    // admin-analytics.js rebuilds #analytics.innerHTML. Never mount Cloudflare
-    // before that render is complete, otherwise Bing's render can remove this card.
     if (section.dataset.analyticsReady !== '1') return false;
     addStyles();
     let card = $('#cloudflareAnalyticsCard');
