@@ -17,14 +17,18 @@ export async function handleCloudflareAnalytics(request, env) {
     for (const row of rows) {
       const date = String(row?.dimensions?.datetime || "").slice(0,10);
       if (!date) continue;
-      const item = daily.get(date) || { date, requests:0, errors:0, subrequests:0 };
+      const item = daily.get(date) || { date, requests:0, errors:0, subrequests:0, cpuP50:0, cpuP99:0, memoryP50:0, memoryP99:0 };
       item.requests += Number(row?.sum?.requests || 0);
       item.errors += Number(row?.sum?.errors || 0);
       item.subrequests += Number(row?.sum?.subrequests || 0);
+      item.cpuP50 = Math.max(item.cpuP50, Number(row?.quantiles?.cpuTimeP50 || 0));
+      item.cpuP99 = Math.max(item.cpuP99, Number(row?.quantiles?.cpuTimeP99 || 0));
+      item.memoryP50 = Math.max(item.memoryP50, Number(row?.quantiles?.memoryUsageBytesP50 || 0));
+      item.memoryP99 = Math.max(item.memoryP99, Number(row?.quantiles?.memoryUsageBytesP99 || 0));
       daily.set(date,item);
     }
     const series = [...daily.values()].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>({...x,errorRate:x.requests?(x.errors/x.requests)*100:0}));
-    const summary = series.reduce((a,x)=>({requests:a.requests+x.requests,errors:a.errors+x.errors,subrequests:a.subrequests+x.subrequests}),{requests:0,errors:0,subrequests:0});
+    const summary = series.reduce((a,x)=>({requests:a.requests+x.requests,errors:a.errors+x.errors,subrequests:a.subrequests+x.subrequests,cpuP50:Math.max(a.cpuP50,x.cpuP50),cpuP99:Math.max(a.cpuP99,x.cpuP99),memoryP50:Math.max(a.memoryP50,x.memoryP50),memoryP99:Math.max(a.memoryP99,x.memoryP99)}),{requests:0,errors:0,subrequests:0,cpuP50:0,cpuP99:0,memoryP50:0,memoryP99:0});
     summary.errorRate = summary.requests ? (summary.errors/summary.requests)*100 : 0;
     return json({success:true,days,worker:WORKER_NAME,summary,series,hasData:series.length>0,source:"Cloudflare GraphQL Analytics API"});
   } catch (error) {
@@ -41,7 +45,7 @@ async function queryWorkerMetrics(env,start,end){
 
 async function queryWorkerMetricsChunk(env,start,end){
   const accountTag=String(env.CLOUDFLARE_ACCOUNT_ID).replace(/[^a-zA-Z0-9_-]/g,"");
-  const query=`query { viewer { accounts(filter: { accountTag: "${accountTag}" }) { workersInvocationsAdaptive(limit: 10000, filter: { datetime_geq: "${start.toISOString()}", datetime_leq: "${end.toISOString()}", scriptName: "${WORKER_NAME}" }) { dimensions { datetime scriptName } sum { requests errors subrequests } } } } }`;
+  const query=`query { viewer { accounts(filter: { accountTag: "${accountTag}" }) { workersInvocationsAdaptive(limit: 10000, filter: { datetime_geq: "${start.toISOString()}", datetime_leq: "${end.toISOString()}", scriptName: "${WORKER_NAME}" }) { dimensions { datetime scriptName } sum { requests errors subrequests } quantiles { cpuTimeP50 cpuTimeP99 memoryUsageBytesP50 memoryUsageBytesP99 } } } } }`;
   const response=await fetch(CLOUDFLARE_GRAPHQL_URL,{method:"POST",headers:{Authorization:`Bearer ${env.CLOUDFLARE_ANALYTICS_TOKEN}`,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({query})});
   const data=await response.json().catch(()=>null);
   if(!response.ok) throw new Error(data?.errors?.[0]?.message||`Cloudflare API error (${response.status})`);
