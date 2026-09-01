@@ -18,6 +18,13 @@
         layout.defer = true;
         document.body.appendChild(layout);
       }
+      if (!document.querySelector('script[data-google-search-runtime]')) {
+        const google = document.createElement('script');
+        google.src = '../js/admin-google-search.js?v=1';
+        google.dataset.googleSearchRuntime = '1';
+        google.defer = true;
+        document.body.appendChild(google);
+      }
       if (!document.querySelector('script[data-seo-checker-runtime]')) {
         const seo = document.createElement('script');
         seo.src = '../js/admin-seo-checker.js?v=1';
@@ -36,7 +43,6 @@
         if (!card || card.dataset.collapsibleReady === '1') return;
         const title = card.querySelector('.sms-section-title');
         if (!title) return;
-        const refresh = title.querySelector('#siteTrafficRefresh');
         const toggle = document.createElement('button');
         toggle.type = 'button';
         toggle.className = 'admin-button outline small site-traffic-collapse-toggle';
