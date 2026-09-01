@@ -9,11 +9,20 @@
     const seo = section.querySelector('#seoChecks')?.closest('.sms-section-card');
     const site = section.querySelector('#siteTrafficAnalyticsCard');
     const cloudflare = section.querySelector('#cloudflareAnalyticsCard');
-    const bing = section.querySelector('.bing-live-card');
+    const bingLive = section.querySelector('.bing-live-card');
     const sourceGrid = section.querySelector('.analytics-source-grid');
     const sourceCard = sourceGrid?.closest('.sms-section-card');
 
-    if (!seo || !site || !cloudflare || !bing || !sourceGrid || !sourceCard) return false;
+    if (!seo || !site || !cloudflare || !bingLive || !sourceGrid || !sourceCard) return false;
+
+    // The Bing connection card is the third source card. Keep the live Bing analytics card outside.
+    const bingConnection = sourceGrid.querySelector('#bingConnectAction')?.closest('.analytics-source');
+    if (bingConnection) {
+      const title = bingConnection.querySelector('h3');
+      const text = bingConnection.querySelector('p');
+      if (title) title.textContent = 'Google / Bing Search Analytics';
+      if (text) text.textContent = 'اتصال مستقیم به Bing Webmaster برای نمایش آمار واقعی داخل پنل.';
+    }
 
     let details = section.querySelector('.analytics-sources-details');
     if (!details) {
@@ -33,19 +42,16 @@
         body.appendChild(actions);
       }
       body.appendChild(sourceGrid);
-
-      // Google / Bing Search Analytics belongs inside the collapsed Sources section.
-      body.appendChild(bing);
       sourceCard.remove();
       section.appendChild(details);
-    } else if (bing.parentElement !== details.querySelector('.analytics-sources-details-body')) {
-      details.querySelector('.analytics-sources-details-body')?.appendChild(bing);
     }
 
-    // Exact requested outer order: SEO, site traffic, Worker analytics, Sources.
+    // Exact requested outer order:
+    // 1 SEO, 2 site traffic, 3 Cloudflare, 4 live Google/Bing, 5 collapsed Sources.
     section.appendChild(seo);
     section.appendChild(site);
     section.appendChild(cloudflare);
+    section.appendChild(bingLive);
     section.appendChild(details);
 
     const heading = section.querySelector('.section-heading');
@@ -70,7 +76,6 @@
       .analytics-sources-details-body{padding:0 18px 18px;border-top:1px solid #e5e9f0}
       .analytics-sources-actions{display:flex;justify-content:flex-start;padding-top:14px;margin-bottom:4px}
       .analytics-sources-details .analytics-source-grid{margin-top:12px}
-      .analytics-sources-details .bing-live-card{margin-top:18px}
     `;
     document.head.appendChild(style);
   };
