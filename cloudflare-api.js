@@ -36,7 +36,7 @@ export async function handleCloudflareAnalytics(request, env) {
     }
     if (url.pathname === "/api/admin/analytics/cloudflare/web/data") {
       const data = await queryWebAnalytics(env, start, end);
-      return json({success:true,days,site:SITE_HOST,...data,source:"Cloudflare Web Analytics (RUM) GraphQL API"});
+      return json({success:true,days,site:SITE_HOST,...data,source:"Cloudflare HTTP Analytics (eyeball traffic)"});
     }
     return json({ success:false, error:"Not Found" },404);
   } catch (error) {
@@ -46,24 +46,40 @@ export async function handleCloudflareAnalytics(request, env) {
 }
 
 async function queryWebAnalytics(env,start,end){
+  const rows = [];
+  let cursor = new Date(start);
+  while (cursor < end) {
+    const chunkEnd = new Date(Math.min(cursor.getTime() + MAX_QUERY_DAYS * 86400000, end.getTime()));
+    rows.push(...await queryWebAnalyticsChunk(env, cursor, chunkEnd));
+    cursor = chunkEnd;
+  }
+
+  const dailyMap=new Map(), pages=new Map(), countries=new Map(), devices=new Map();
+  let pageViews=0, visits=0;
+  for(const row of rows){
+    const count=Number(row?.count||0), rowVisits=Number(row?.sum?.visits||0);
+    const date=String(row?.dimensions?.date||row?.dimensions?.datetime||"").slice(0,10);
+    pageViews+=count; visits+=rowVisits;
+    if(date){const item=dailyMap.get(date)||{date,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;dailyMap.set(date,item);}
+    const path=String(row?.dimensions?.clientRequestPath||"").trim(); if(path){const item=pages.get(path)||{path,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;pages.set(path,item);}
+    const country=String(row?.dimensions?.clientCountryName||"").trim(); if(country){const item=countries.get(country)||{country,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;countries.set(country,item);}
+    const device=String(row?.dimensions?.clientDeviceType||"").trim(); if(device){const item=devices.get(device)||{device,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;devices.set(device,item);}
+  }
+  const series=[...dailyMap.values()].sort((a,b)=>a.date.localeCompare(b.date));
+  return {summary:{pageViews,visits},series,topPages:[...pages.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,10),countries:[...countries.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,10),devices:[...devices.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,6),hasData:series.length>0};
+}
+
+async function queryWebAnalyticsChunk(env,start,end){
   const accountTag=String(env.CLOUDFLARE_ACCOUNT_ID).replace(/[^a-zA-Z0-9_-]/g,"");
-  const filter=`filter: { datetime_geq: "${start.toISOString()}", datetime_leq: "${end.toISOString()}", requestHost: "${SITE_HOST}" }`;
-  const query=`query { viewer { accounts(filter: { accountTag: "${accountTag}" }) { traffic: rumPageloadEventsAdaptiveGroups(limit: 10000, orderBy: [count_DESC], ${filter}) { count dimensions { date requestPath countryName deviceType } sum { visits } } } } }`;
+  const filter=`datetime_geq: "${start.toISOString()}", datetime_lt: "${end.toISOString()}", clientRequestHTTPHost: "${SITE_HOST}", requestSource: "eyeball"`;
+  const query=`query { viewer { accounts(filter: { accountTag: "${accountTag}" }) { traffic: httpRequestsAdaptiveGroups(limit: 10000, orderBy: [count_DESC], filter: { ${filter} }) { count dimensions { date clientRequestPath clientCountryName clientDeviceType } sum { visits } } } } }`;
   const response=await fetch(CLOUDFLARE_GRAPHQL_URL,{method:"POST",headers:{Authorization:`Bearer ${env.CLOUDFLARE_ANALYTICS_TOKEN}`,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({query})});
   const data=await response.json().catch(()=>null);
   if(!response.ok) throw new Error(data?.errors?.[0]?.message||`Cloudflare API error (${response.status})`);
   if(data?.errors?.length) throw new Error(data.errors.map(x=>x.message).join("; "));
-  const rows=data?.data?.viewer?.accounts?.[0]?.traffic||[];
-  const dailyMap=new Map(), pages=new Map(), countries=new Map(), devices=new Map();
-  for(const row of rows){
-    const date=String(row?.dimensions?.date||"").slice(0,10); const views=Number(row?.count||0); const visits=Number(row?.sum?.visits||0);
-    if(date){const item=dailyMap.get(date)||{date,pageViews:0,visits:0};item.pageViews+=views;item.visits+=visits;dailyMap.set(date,item);}
-    const path=String(row?.dimensions?.requestPath||"").trim(); if(path){const item=pages.get(path)||{path,pageViews:0,visits:0};item.pageViews+=views;item.visits+=visits;pages.set(path,item);}
-    const country=String(row?.dimensions?.countryName||"").trim(); if(country){const item=countries.get(country)||{country,pageViews:0,visits:0};item.pageViews+=views;item.visits+=visits;countries.set(country,item);}
-    const device=String(row?.dimensions?.deviceType||"").trim(); if(device){const item=devices.get(device)||{device,pageViews:0,visits:0};item.pageViews+=views;item.visits+=visits;devices.set(device,item);}
-  }
-  const series=[...dailyMap.values()].sort((a,b)=>a.date.localeCompare(b.date));
-  return {summary:{pageViews:series.reduce((n,x)=>n+x.pageViews,0),visits:series.reduce((n,x)=>n+x.visits,0)},series,topPages:[...pages.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,10),countries:[...countries.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,10),devices:[...devices.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,6),hasData:series.length>0};
+  const account=data?.data?.viewer?.accounts?.[0];
+  if(!account) throw new Error("Cloudflare Account Analytics برای این Account ID داده‌ای برنگرداند.");
+  return account.traffic||[];
 }
 
 async function queryWorkerMetrics(env,start,end){
