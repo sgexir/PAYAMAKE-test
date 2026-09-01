@@ -4,6 +4,7 @@
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   const num = v => new Intl.NumberFormat('fa-IR').format(Math.round(Number(v) || 0));
   let days = 30;
+  let period = '';
 
   function addStyles(){
     if($('#siteTrafficAnalyticsStyles')) return;
@@ -28,7 +29,8 @@
     const box=$('#siteTrafficContent',card);if(!box)return;
     box.innerHTML='<div class="site-traffic-loading">در حال دریافت آمار واقعی بازدید سایت...</div>';
     try{
-      const response=await fetch(`/api/admin/analytics/cloudflare/web/data?days=${days}`,{credentials:'include',cache:'no-store'});
+      const query=period?`period=${encodeURIComponent(period)}`:`days=${days}`;
+      const response=await fetch(`/api/admin/analytics/cloudflare/web/data?${query}`,{credentials:'include',cache:'no-store'});
       const data=await response.json().catch(()=>({success:false,error:'پاسخ نامعتبر از API'}));
       if(!response.ok||!data.success)throw new Error(data.error||`خطای API (${response.status})`);
       const s=data.summary||{},series=Array.isArray(data.series)?data.series:[];
@@ -39,9 +41,10 @@
   function inject(){
     const section=$('#analytics');if(!section||section.dataset.analyticsReady!=='1')return false;if($('#siteTrafficAnalyticsCard'))return true;addStyles();
     const card=document.createElement('div');card.id='siteTrafficAnalyticsCard';card.className='sms-section-card site-traffic-card';
-    card.innerHTML='<div class="sms-section-title"><div><h3>بازدید و ترافیک واقعی سایت</h3><span>آمار بازدیدکنندگان، Page Views و رفتار کاربران PAYAMAKE، جدا از آمار Worker.</span></div><button id="siteTrafficRefresh" class="admin-button outline small" type="button">بروزرسانی</button></div><div class="site-traffic-toolbar"><div class="site-traffic-ranges"><button data-site-days="7" type="button">۷ روز</button><button data-site-days="30" class="active" type="button">۳۰ روز</button><button data-site-days="90" type="button">۹۰ روز</button><button data-site-days="180" type="button">۱۸۰ روز</button></div><span>ترافیک واقعی سایت</span></div><div id="siteTrafficContent" class="site-traffic-loading">در حال آماده‌سازی...</div>';
+    card.innerHTML='<div class="sms-section-title"><div><h3>بازدید و ترافیک واقعی سایت</h3><span>آمار بازدیدکنندگان، Page Views و رفتار کاربران PAYAMAKE، جدا از آمار Worker.</span></div><button id="siteTrafficRefresh" class="admin-button outline small" type="button">بروزرسانی</button></div><div class="site-traffic-toolbar"><div class="site-traffic-ranges"><button data-site-period="today" type="button">امروز</button><button data-site-period="yesterday" type="button">دیروز</button><button data-site-days="7" type="button">۷ روز</button><button data-site-days="30" class="active" type="button">۳۰ روز</button><button data-site-days="90" type="button">۹۰ روز</button><button data-site-days="180" type="button">۱۸۰ روز</button></div><span>ترافیک واقعی سایت</span></div><div id="siteTrafficContent" class="site-traffic-loading">در حال آماده‌سازی...</div>';
     section.appendChild(card);
-    card.querySelectorAll('[data-site-days]').forEach(button=>button.addEventListener('click',()=>{days=Number(button.dataset.siteDays)||30;card.querySelectorAll('[data-site-days]').forEach(x=>x.classList.toggle('active',x===button));load(card);}));
+    card.querySelectorAll('[data-site-days]').forEach(button=>button.addEventListener('click',()=>{period='';days=Number(button.dataset.siteDays)||30;card.querySelectorAll('[data-site-days], [data-site-period]').forEach(x=>x.classList.toggle('active',x===button));load(card);}));
+    card.querySelectorAll('[data-site-period]').forEach(button=>button.addEventListener('click',()=>{period=button.dataset.sitePeriod;card.querySelectorAll('[data-site-days], [data-site-period]').forEach(x=>x.classList.toggle('active',x===button));load(card);}));
     $('#siteTrafficRefresh',card)?.addEventListener('click',()=>load(card));load(card);return true;
   }
 
