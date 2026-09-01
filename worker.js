@@ -4,6 +4,7 @@ import { handleLeadsApi } from "./leads-api.js";
 import { handleMonitoringApi, getMonitoringSetting, writeMonitoringError, ensureMonitoringSettings } from "./monitoring-api.js";
 import { handleHealthApi } from "./health-api.js";
 import { handleBingApi } from "./bing-api.js";
+import { handleGoogleSearchConsoleApi } from "./google-search-console-api.js";
 import { handleCloudflareAnalytics } from "./cloudflare-api.js";
 import { sendLeadSms, refreshPendingSmsDeliveries } from "./sms.js";
 
@@ -30,7 +31,8 @@ export default {
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-analytics\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-cloudflare(?:-loader)?\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-web-analytics\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
-        const adminScripts = '<script src="../js/admin-analytics.js?v=9"></script><script src="../js/admin-cloudflare.js?v=9"></script><script src="../js/admin-web-analytics.js?v=1"></script>';
+        html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-google-search\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
+        const adminScripts = '<script src="../js/admin-analytics.js?v=9"></script><script src="../js/admin-cloudflare.js?v=9"></script><script src="../js/admin-web-analytics.js?v=1"></script><script src="../js/admin-google-search.js?v=1"></script>';
         if (html.includes("</body>")) html = html.replace("</body>", `${adminScripts}</body>`); else html += adminScripts;
         const headers = new Headers(response.headers);
         headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"); headers.set("Pragma", "no-cache"); headers.delete("ETag"); headers.delete("Expires");
@@ -41,6 +43,8 @@ export default {
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     if (url.pathname === "/api/admin/analytics/bing/callback") { const response = await handleBingApi(request, env); return withCors(response, origin); }
     if (url.pathname.startsWith("/api/admin/analytics/bing/")) { const response = await handleBingApi(request, env); return withCors(response, origin); }
+    if (url.pathname === "/api/admin/analytics/google/callback") { const response = await handleGoogleSearchConsoleApi(request, env); return withCors(response, origin); }
+    if (url.pathname.startsWith("/api/admin/analytics/google/")) { const response = await handleGoogleSearchConsoleApi(request, env); return withCors(response, origin); }
     if (url.pathname === "/api/admin/analytics/cloudflare/data" || url.pathname === "/api/admin/analytics/cloudflare/web/data") { const response = await handleCloudflareAnalytics(request, env); return withCors(response, origin); }
     if (url.pathname === "/api/admin/system/health") { const response = await handleHealthApi(request, env); return withCors(response, origin); }
     if (url.pathname === "/api/admin/system/settings") { const adminResponse = await handleAdminApi(request, env); if (adminResponse.status === 401) return withCors(adminResponse, origin); const response = await handleMonitoringApi(request, env); return withCors(response, origin); }
