@@ -67,7 +67,6 @@ async function queryWebAnalytics(env,start,end){
     const device=String(row?.dimensions?.clientDeviceType||"").trim(); if(device){const item=devices.get(device)||{device,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;devices.set(device,item);}
     const browser=String(row?.dimensions?.userAgentBrowser||"").trim(); if(browser){const item=browsers.get(browser)||{browser,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;browsers.set(browser,item);}
     const os=String(row?.dimensions?.userAgentOS||"").trim(); if(os){const item=operatingSystems.get(os)||{os,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;operatingSystems.set(os,item);}
-    const referrer=String(row?.dimensions?.clientRefererHost||"").trim(); if(referrer){const item=referrers.get(referrer)||{referrer,pageViews:0,visits:0};item.pageViews+=count;item.visits+=rowVisits;referrers.set(referrer,item);}
   }
   const series=[...dailyMap.values()].sort((a,b)=>a.date.localeCompare(b.date));
   const rank=(map,key,limit)=>[...map.values()].sort((a,b)=>b.pageViews-a.pageViews).slice(0,limit);
@@ -77,7 +76,7 @@ async function queryWebAnalytics(env,start,end){
 async function queryWebAnalyticsChunk(env,start,end){
   const accountTag=String(env.CLOUDFLARE_ACCOUNT_ID).replace(/[^a-zA-Z0-9_-]/g,"");
   const filter=`datetime_geq: "${start.toISOString()}", datetime_lt: "${end.toISOString()}", clientRequestHTTPHost: "${SITE_HOST}", requestSource: "eyeball"`;
-  const query=`query { viewer { accounts(filter: { accountTag: "${accountTag}" }) { traffic: httpRequestsAdaptiveGroups(limit: 10000, orderBy: [count_DESC], filter: { ${filter} }) { count dimensions { date clientRequestPath clientCountryName clientDeviceType userAgentBrowser userAgentOS clientRefererHost } sum { visits } } } } }`;
+  const query=`query { viewer { accounts(filter: { accountTag: "${accountTag}" }) { traffic: httpRequestsAdaptiveGroups(limit: 10000, orderBy: [count_DESC], filter: { ${filter} }) { count dimensions { date clientRequestPath clientCountryName clientDeviceType userAgentBrowser userAgentOS } sum { visits } } } } }`;
   const response=await fetch(CLOUDFLARE_GRAPHQL_URL,{method:"POST",headers:{Authorization:`Bearer ${env.CLOUDFLARE_ANALYTICS_TOKEN}`,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({query})});
   const data=await response.json().catch(()=>null);
   if(!response.ok) throw new Error(data?.errors?.[0]?.message||`Cloudflare API error (${response.status})`);
