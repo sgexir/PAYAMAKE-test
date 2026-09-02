@@ -82,27 +82,6 @@
       body.appendChild(bingCard);
     } else if (bingCard.parentElement !== body) body.appendChild(bingCard);
 
-    const status = async () => {
-      const box = bingCard.querySelector('#bingStatus'), msg = bingCard.querySelector('#bingMessage'), connect = bingCard.querySelector('#bingConnect'), disconnect = bingCard.querySelector('#bingDisconnect');
-      if (!box) return;
-      try {
-        const r = await fetch('/api/admin/analytics/bing/status', { credentials: 'include', cache: 'no-store' });
-        const d = await r.json();
-        if (!r.ok || !d.success) throw new Error(d.error || 'خطا در بررسی اتصال Bing.');
-        box.innerHTML = d.connected ? '<span class="bing-dot connected"></span><span>متصل به Bing Webmaster</span>' : '<span class="bing-dot"></span><span>متصل نیست</span>';
-        if (connect) connect.style.display = d.connected ? 'none' : 'inline-flex';
-        if (disconnect) disconnect.style.display = d.connected ? 'inline-flex' : 'none';
-        if (msg) msg.innerHTML = d.connected ? '<div class="bing-success">اتصال OAuth فعال است. دسترسی خواندن Webmaster برای این حساب ذخیره شده و آماده دریافت آمار است.</div>' : '';
-      } catch (e) { if (msg) msg.innerHTML = `<div class="bing-error">${String(e.message || 'خطا در بررسی اتصال Bing.')}</div>`; }
-    };
-    if (!bingCard.dataset.bound) {
-      bingCard.dataset.bound = '1';
-      bingCard.querySelector('#bingRefreshStatus')?.addEventListener('click', status);
-      bingCard.querySelector('#bingConnect')?.addEventListener('click', () => { location.href = '/api/admin/analytics/bing/connect'; });
-      bingCard.querySelector('#bingDisconnect')?.addEventListener('click', async () => { try { await fetch('/api/admin/analytics/bing/disconnect', { method: 'POST', credentials: 'include' }); } finally { status(); } });
-      status();
-    }
-
     const prefs = readPrefs();
     const seoWrap = wrap(seo, 'seo-health-details', 'سلامت پایه SEO', 'بررسی مستقیم فایل‌ها و سیگنال‌های فنی سایت.');
     const cloudWrap = wrap(cloudflare, 'cloudflare-analytics-details', 'Cloudflare Analytics', 'آمار آنلاین واقعی Cloudflare داخل پنل PAYAMAKE.');
@@ -138,7 +117,11 @@
 
   const installSettings = (section, items) => {
     let panel = section.querySelector('.analytics-display-settings');
-    if (panel) return;
+    if (panel) {
+      // Always re-append an existing settings panel so it remains after «منابع آمار».
+      section.appendChild(panel);
+      return;
+    }
     panel = document.createElement('details');
     panel.className = 'sms-section-card analytics-display-settings';
     panel.open = false;
@@ -198,33 +181,44 @@
       .analytics-collapsible>summary::-webkit-details-marker,.analytics-sources-details>summary::-webkit-details-marker,.analytics-display-settings>summary::-webkit-details-marker{display:none}
       .analytics-collapsible>summary>span:first-child,.analytics-sources-details>summary>span:first-child,.analytics-display-settings>summary>span:first-child{display:flex;flex-direction:column;gap:4px}
       .analytics-collapsible summary strong,.analytics-sources-details summary strong,.analytics-display-settings summary strong{font-size:14px}
-      .analytics-collapsible summary small,.analytics-sources-details summary small,.analytics-display-settings summary small{font-size:11px;color:#667085}
-      .analytics-chevron{font-size:18px;color:#667085;transition:transform .18s ease}.analytics-collapsible[open] .analytics-chevron,.analytics-sources-details[open] .analytics-chevron,.analytics-display-settings[open] .analytics-chevron{transform:rotate(180deg)}
-      .analytics-collapsible-body{padding:0 18px 18px;border-top:1px solid #e5e9f0}.analytics-collapsible-body>.sms-section-card{margin-top:18px}
-      .analytics-sources-details-body{padding:0 18px 18px;border-top:1px solid #e5e9f0}.analytics-sources-actions{display:flex;justify-content:flex-start;padding-top:14px;margin-bottom:4px}
-      .analytics-sources-details .analytics-source-grid{margin-top:12px}.analytics-sources-details .bing-analytics-card{margin-top:18px;padding:18px;border:1px solid #e5e9f0;border-radius:14px;background:#fff}
-      .analytics-sources-details .bing-connect-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid #e5e9f0;border-radius:12px;background:#f8fafc}
-      .analytics-sources-details .bing-status{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}.analytics-sources-details .bing-dot{width:9px;height:9px;border-radius:50%;background:#98a2b3;display:inline-block}.analytics-sources-details .bing-dot.connected{background:#12b76a}
-      .analytics-sources-details .bing-actions{display:flex;gap:7px;flex-wrap:wrap}.analytics-sources-details #bingMessage{margin-top:10px}.analytics-sources-details .bing-success{padding:11px 13px;border-radius:10px;background:#ecfdf3;color:#027a48;font-size:11px;line-height:1.8}.analytics-sources-details .bing-error{padding:11px 13px;border-radius:10px;background:#fef3f2;color:#b42318;font-size:11px;line-height:1.8}.analytics-sources-details .bing-help{margin-top:10px;color:#667085;font-size:11px;line-height:1.8}
-      .analytics-display-settings .analytics-settings-body{padding:0 18px 18px;border-top:1px solid #e5e9f0}
-      .analytics-settings-hint{padding:14px 0 10px;color:#667085;font-size:11px;line-height:1.8}
-      .analytics-settings-list{display:grid;gap:8px}
-      .analytics-setting-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:11px 12px;border:1px solid #e5e9f0;border-radius:10px;background:#f8fafc;cursor:grab}
+      .analytics-collapsible summary small,.analytics-sources-details summary small,.analytics-display-settings summary small{font-size:12px;color:#7b8492}
+      .analytics-chevron{font-size:20px;transition:transform .2s ease}
+      details[open]>summary .analytics-chevron{transform:rotate(180deg)}
+      .analytics-collapsible-body{padding:0 18px 18px}
+      .analytics-sources-details-body{padding:0 18px 18px}
+      .analytics-sources-actions{display:flex;justify-content:flex-end;margin-bottom:12px}
+      .analytics-display-settings{margin-top:18px}
+      .analytics-settings-body{padding:0 18px 18px}
+      .analytics-settings-hint{font-size:12px;color:#7b8492;margin-bottom:12px}
+      .analytics-settings-list{display:flex;flex-direction:column;gap:8px}
+      .analytics-setting-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e5e9f0;border-radius:10px;background:#fff;cursor:grab}
       .analytics-setting-row.is-dragging{opacity:.55}
-      .analytics-drag{font-size:16px;color:#667085;cursor:grab;line-height:1}
-      .analytics-setting-title{display:flex;flex-direction:column;gap:3px;min-width:0}.analytics-setting-title strong{font-size:12px}.analytics-setting-title small{font-size:10px;color:#667085;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .analytics-setting-toggle{display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer}.analytics-setting-toggle input{width:16px;height:16px}.analytics-setting-fixed{font-size:10px;color:#667085}
-      .analytics-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-      @media(max-width:800px){.analytics-setting-row{grid-template-columns:auto 1fr auto}.analytics-setting-title small{white-space:normal}.analytics-collapsible>summary,.analytics-sources-details>summary,.analytics-display-settings>summary{padding:14px}.analytics-collapsible-body,.analytics-sources-details-body,.analytics-display-settings .analytics-settings-body{padding-left:14px;padding-right:14px}}
+      .analytics-drag{font-size:16px;color:#8b93a1;line-height:1}
+      .analytics-setting-title{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+      .analytics-setting-title strong{font-size:13px}
+      .analytics-setting-title small{font-size:11px;color:#7b8492;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .analytics-setting-toggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
+      .analytics-setting-fixed{font-size:11px;color:#7b8492;white-space:nowrap}
+      .analytics-settings-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+      @media (max-width:640px){
+        .analytics-collapsible>summary,.analytics-sources-details>summary,.analytics-display-settings>summary{padding:14px}
+        .analytics-collapsible-body,.analytics-sources-details-body,.analytics-settings-body{padding-left:14px;padding-right:14px}
+        .analytics-setting-row{padding:9px}
+        .analytics-setting-title small{white-space:normal}
+      }
     `;
     document.head.appendChild(s);
   };
 
-  const init = () => {
+  const boot = () => {
     styles();
-    let n = 0;
-    const t = setInterval(() => { if (setup() || ++n >= 160) clearInterval(t); }, 250);
-    setup();
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      if (setup() || tries > 160) clearInterval(timer);
+    }, 250);
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+  else boot();
 })();
