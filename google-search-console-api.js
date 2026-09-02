@@ -3,6 +3,7 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_SEARCH_CONSOLE_URL = "https://searchconsole.googleapis.com/webmasters/v3/sites";
 const REDIRECT_PATH = "/api/admin/analytics/google/callback";
 const SITE_URL = "https://payamake.ir/";
+const DOMAIN_SITE_URL = "sc-domain:payamake.ir";
 
 export async function handleGoogleSearchConsoleApi(request, env) {
   if (!env.DB) return json({ success: false, error: "Database is not configured." }, 500);
@@ -80,26 +81,50 @@ async function analyticsData(request, env, adminId) {
     const days = Math.min(Math.max(Number(new URL(request.url).searchParams.get("days")) || 30, 1), 90);
     const token = await getAccessToken(env, adminId);
     if (!token) return json({ success: false, error: "Google Search Console متصل نیست." }, 400);
+    const siteUrl = await resolveSiteUrl(token, env, adminId);
     const end = new Date();
     end.setUTCDate(end.getUTCDate() - 1);
     const start = new Date(end);
     start.setUTCDate(start.getUTCDate() - (days - 1));
     const startDate = start.toISOString().slice(0, 10), endDate = end.toISOString().slice(0, 10);
     const [summaryRows, queries, pages, countries, devices] = await Promise.all([
-      querySearchConsole(token, SITE_URL, { startDate, endDate, dimensions: ["date"], rowLimit: 25000 }),
-      querySearchConsole(token, SITE_URL, { startDate, endDate, dimensions: ["query"], rowLimit: 50 }),
-      querySearchConsole(token, SITE_URL, { startDate, endDate, dimensions: ["page"], rowLimit: 50 }),
-      querySearchConsole(token, SITE_URL, { startDate, endDate, dimensions: ["country"], rowLimit: 30 }),
-      querySearchConsole(token, SITE_URL, { startDate, endDate, dimensions: ["device"], rowLimit: 10 })
+      querySearchConsole(token, siteUrl, { startDate, endDate, dimensions: ["date"], rowLimit: 25000 }),
+      querySearchConsole(token, siteUrl, { startDate, endDate, dimensions: ["query"], rowLimit: 50 }),
+      querySearchConsole(token, siteUrl, { startDate, endDate, dimensions: ["page"], rowLimit: 50 }),
+      querySearchConsole(token, siteUrl, { startDate, endDate, dimensions: ["country"], rowLimit: 30 }),
+      querySearchConsole(token, siteUrl, { startDate, endDate, dimensions: ["device"], rowLimit: 10 })
     ]);
     const sum = rows => rows.reduce((a, r) => ({ clicks: a.clicks + Number(r.clicks || 0), impressions: a.impressions + Number(r.impressions || 0), weightedPosition: a.weightedPosition + Number(r.position || 0) * Number(r.impressions || 0) }), { clicks: 0, impressions: 0, weightedPosition: 0 });
     const totals = sum(summaryRows);
     const mapRows = (rows, key) => rows.map(r => ({ [key]: r.keys?.[0] || "—", clicks: Number(r.clicks || 0), impressions: Number(r.impressions || 0), ctr: Number(r.ctr || 0) * 100, position: Number(r.position || 0) })).sort((a,b) => b.clicks - a.clicks);
-    return json({ success: true, siteUrl: SITE_URL, startDate, endDate, days, summary: { clicks: totals.clicks, impressions: totals.impressions, ctr: totals.impressions ? totals.clicks / totals.impressions * 100 : 0, position: totals.impressions ? totals.weightedPosition / totals.impressions : 0 }, series: summaryRows.map(r => ({ date: r.keys?.[0], clicks: Number(r.clicks || 0), impressions: Number(r.impressions || 0), ctr: Number(r.ctr || 0) * 100, position: Number(r.position || 0) })), queries: mapRows(queries, "query"), pages: mapRows(pages, "page"), countries: mapRows(countries, "country"), devices: mapRows(devices, "device") });
+    return json({ success: true, siteUrl, startDate, endDate, days, summary: { clicks: totals.clicks, impressions: totals.impressions, ctr: totals.impressions ? totals.clicks / totals.impressions * 100 : 0, position: totals.impressions ? totals.weightedPosition / totals.impressions : 0 }, series: summaryRows.map(r => ({ date: r.keys?.[0], clicks: Number(r.clicks || 0), impressions: Number(r.impressions || 0), ctr: Number(r.ctr || 0) * 100, position: Number(r.position || 0) })), queries: mapRows(queries, "query"), pages: mapRows(pages, "page"), countries: mapRows(countries, "country"), devices: mapRows(devices, "device") });
   } catch (e) {
     console.error("Google Search Console analytics failed", e);
     return json({ success: false, error: e.message || "دریافت آمار Google Search Console انجام نشد." }, 502);
   }
+}
+
+async function resolveSiteUrl(token, env, adminId) {
+  const r = await fetch(GOOGLE_SEARCH_CONSOLE_URL, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(data?.error?.message || `Google Search Console sites API error (${r.status})`);
+  const sites = Array.isArray(data?.siteEntry) ? data.siteEntry : [];
+  const exactDomain = sites.find(site => site.siteUrl === DOMAIN_SITE_URL);
+  const exactUrl = sites.find(site => site.siteUrl === SITE_URL);
+  const alternateUrl = sites.find(site => site.siteUrl === "https://payamake.ir");
+  const match = exactDomain || exactUrl || alternateUrl;
+  if (!match) {
+    const relevant = sites.filter(site => /payamake\.ir/i.test(String(site.siteUrl || ""))).map(site => `${site.siteUrl} (${site.permissionLevel || "unknown"})`);
+    const details = relevant.length ? ` موارد قابل دسترسی: ${relevant.join(", ")}` : " هیچ Property مطابق payamake.ir از طریق API قابل دسترسی نیست.";
+    throw new Error(`حساب Google متصل است، اما Property مناسب Google Search Console پیدا نشد.${details}`);
+  }
+  if (match.permissionLevel === "siteUnverifiedUser") {
+    throw new Error(`Property ${match.siteUrl} در Google Search Console برای حساب متصل فقط سطح دسترسی siteUnverifiedUser دارد و برای دریافت داده کافی نیست.`);
+  }
+  if (match.siteUrl !== SITE_URL) {
+    await env.DB.prepare("UPDATE google_search_console_connections SET site_url=?,updated_at=CURRENT_TIMESTAMP WHERE admin_id=?").bind(match.siteUrl, adminId).run();
+  }
+  return match.siteUrl;
 }
 
 async function querySearchConsole(token, siteUrl, body) {
