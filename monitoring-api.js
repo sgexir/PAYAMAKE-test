@@ -7,6 +7,8 @@ const DEFAULTS = {
   cron_interval_minutes: "5"
 };
 
+const monitoringSettingsInit = new WeakMap();
+
 export async function handleMonitoringApi(request, env) {
   if (!env.DB) return json({ success: false, error: "Database is not configured." }, 500);
   await ensureMonitoringSettings(env.DB);
@@ -53,8 +55,24 @@ export async function writeMonitoringError(db, level, source, message, details =
 
 export async function ensureMonitoringSettings(db) {
   if (!db) return;
-  await db.prepare("CREATE TABLE IF NOT EXISTS system_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
-  for (const [key, value] of Object.entries(DEFAULTS)) await db.prepare("INSERT OR IGNORE INTO system_settings (setting_key, setting_value) VALUES (?, ?)").bind(key, value).run();
+  const existing = monitoringSettingsInit.get(db);
+  if (existing) return existing;
+
+  const initialization = (async () => {
+    await db.prepare("CREATE TABLE IF NOT EXISTS system_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+    const entries = Object.entries(DEFAULTS);
+    const placeholders = entries.map(() => "(?, ?)").join(", ");
+    const bindings = entries.flatMap(([key, value]) => [key, value]);
+    await db.prepare(`INSERT OR IGNORE INTO system_settings (setting_key, setting_value) VALUES ${placeholders}`).bind(...bindings).run();
+  })();
+
+  monitoringSettingsInit.set(db, initialization);
+  try {
+    await initialization;
+  } catch (error) {
+    monitoringSettingsInit.delete(db);
+    throw error;
+  }
 }
 
 async function ensureSystemLogsTable(db) { await db.prepare("CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT NOT NULL DEFAULT 'info', source TEXT NOT NULL, event TEXT, message TEXT, details_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run(); }
