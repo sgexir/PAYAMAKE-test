@@ -75,19 +75,20 @@ export default {
       return jsonResponse({ success: false, error: error instanceof Error ? error.message : "خطای ناشناخته" }, 500, origin);
     }
   },
-  async scheduled(event, env, ctx) { ctx.waitUntil(runDeliveryCron(env)); },
+  async scheduled(event, env, ctx) { ctx.waitUntil(runDeliveryCron(env, event)); },
 };
 
-async function runDeliveryCron(env) {
+async function runDeliveryCron(env, event) {
   const startedAt = Date.now();
   try {
     if (!env.DB) return;
     await ensureMonitoringSettings(env.DB);
     if ((await getMonitoringSetting(env.DB, "delivery_monitoring_enabled")) !== "1") return;
     const intervalMinutes = Math.min(Math.max(Number(await getMonitoringSetting(env.DB, "cron_interval_minutes")) || 5, 1), 1440);
-    const lastRun = await env.DB.prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'cron_last_run_at' LIMIT 1").first();
-    if (lastRun?.setting_value) { const ageMinutes = (Date.now() - Date.parse(String(lastRun.setting_value))) / 60000; if (Number.isFinite(ageMinutes) && ageMinutes < intervalMinutes) return; }
-    await env.DB.prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('cron_last_run_at', ?) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP").bind(new Date().toISOString()).run();
+    const scheduledAt = Number(event?.scheduledTime);
+    if (!Number.isFinite(scheduledAt)) return;
+    const scheduledMinute = Math.floor(scheduledAt / 60000);
+    if (scheduledMinute % intervalMinutes !== 0) return;
     const result = await refreshPendingSmsDeliveries(env); const hasErrors = Boolean(result.errors?.length);
     if (hasErrors) await writeMonitoringError(env.DB, "warn", "sms_delivery_cron", "SMS delivery cron encountered provider errors", { ...result, durationMs: Date.now() - startedAt, intervalMinutes });
     else if ((await getMonitoringSetting(env.DB, "log_successful_crons")) === "1") { await ensureSystemLogsTable(env.DB); await writeSystemLog(env.DB, "info", "sms_delivery_cron", "SMS delivery cron completed", { ...result, durationMs: Date.now() - startedAt, intervalMinutes }); }
