@@ -31,14 +31,12 @@ export async function handleMonitoringApi(request, env) {
 }
 
 export async function getMonitoringSetting(db, key) {
-  await ensureMonitoringSettings(db);
   const row = await db.prepare("SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 1").bind(key).first();
   return row?.setting_value ?? DEFAULTS[key];
 }
 
 export async function shouldLogSystemError(db, source, message) {
   if ((await getMonitoringSetting(db, "system_error_logging_enabled")) !== "1") return false;
-  await ensureSystemLogsTable(db);
   if ((await getMonitoringSetting(db, "duplicate_error_suppression_enabled")) !== "1") return true;
   const cooldown = Number(await getMonitoringSetting(db, "error_cooldown_minutes")) || 30;
   const row = await db.prepare("SELECT created_at FROM system_logs WHERE source = ? AND message = ? AND level IN ('error','warn') ORDER BY id DESC LIMIT 1").bind(source, message).first();
@@ -59,7 +57,6 @@ export async function ensureMonitoringSettings(db) {
   if (existing) return existing;
 
   const initialization = (async () => {
-    await db.prepare("CREATE TABLE IF NOT EXISTS system_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
     const entries = Object.entries(DEFAULTS);
     const placeholders = entries.map(() => "(?, ?)").join(", ");
     const bindings = entries.flatMap(([key, value]) => [key, value]);
@@ -75,7 +72,6 @@ export async function ensureMonitoringSettings(db) {
   }
 }
 
-async function ensureSystemLogsTable(db) { await db.prepare("CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT NOT NULL DEFAULT 'info', source TEXT NOT NULL, event TEXT, message TEXT, details_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run(); }
 async function readSettings(db) { const result = await db.prepare("SELECT setting_key, setting_value, updated_at FROM system_settings ORDER BY setting_key").all(); const settings = { ...DEFAULTS }; for (const row of result.results || []) settings[row.setting_key] = row.setting_value; return settings; }
 async function readJson(request) { try { return await request.json(); } catch { return null; } }
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=UTF-8" } }); }
