@@ -22,10 +22,11 @@ export async function handleHealthApi(request, env) {
     checks.database = { status: "error", label: "خطا", detail: error instanceof Error ? error.message : String(error) };
   }
 
+  let cronIntervalMinutes = 5;
   try {
     const settings = await env.DB.prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('cron_last_run_at', 'cron_interval_minutes')").all();
     const settingMap = Object.fromEntries((settings.results || []).map((row) => [row.setting_key, row.setting_value]));
-    const intervalMinutes = Math.min(Math.max(Number(settingMap.cron_interval_minutes) || 5, 1), 1440);
+    cronIntervalMinutes = Math.min(Math.max(Number(settingMap.cron_interval_minutes) || 5, 1), 1440);
     const lastRunAt = settingMap.cron_last_run_at ? new Date(String(settingMap.cron_last_run_at)) : null;
     const lastRunAgeMinutes = lastRunAt && Number.isFinite(lastRunAt.getTime()) ? Math.max(0, (Date.now() - lastRunAt.getTime()) / 60000) : null;
 
@@ -34,21 +35,21 @@ export async function handleHealthApi(request, env) {
     const errorAfterLastRun = latestErrorAt && Number.isFinite(latestErrorAt.getTime()) && lastRunAt && Number.isFinite(lastRunAt.getTime()) && latestErrorAt.getTime() > lastRunAt.getTime();
 
     if (!lastRunAt || lastRunAgeMinutes === null) {
-      checks.cron = { status: "unknown", label: "بدون اجرای معتبر", detail: `هنوز زمان آخرین اجرای Cron ثبت نشده است. فاصله مؤثر Cron: ${intervalMinutes} دقیقه.` };
+      checks.cron = { status: "unknown", label: "بدون اجرای معتبر", detail: `هنوز زمان آخرین اجرای Cron ثبت نشده است. فاصله مؤثر Cron: ${cronIntervalMinutes} دقیقه.` };
     } else if (errorAfterLastRun) {
       const errorAgeMinutes = Math.max(0, (Date.now() - latestErrorAt.getTime()) / 60000);
       checks.cron = { status: "error", label: "خطا", detail: `${latestError.message || "Cron با خطا مواجه شد"} — آخرین خطا ${Math.round(errorAgeMinutes)} دقیقه قبل، پس از آخرین اجرای ثبت‌شده.` };
-    } else if (lastRunAgeMinutes > Math.max(intervalMinutes * 2, 15)) {
-      checks.cron = { status: "warn", label: "قدیمی", detail: `آخرین اجرای Cron حدود ${Math.round(lastRunAgeMinutes)} دقیقه قبل ثبت شده است؛ فاصله مؤثر Cron: ${intervalMinutes} دقیقه.` };
+    } else if (lastRunAgeMinutes > Math.max(cronIntervalMinutes * 2, 15)) {
+      checks.cron = { status: "warn", label: "قدیمی", detail: `آخرین اجرای Cron حدود ${Math.round(lastRunAgeMinutes)} دقیقه قبل ثبت شده است؛ فاصله مؤثر Cron: ${cronIntervalMinutes} دقیقه.` };
     } else {
-      checks.cron = { status: "ok", label: "سالم", detail: `آخرین اجرای Cron حدود ${Math.round(lastRunAgeMinutes)} دقیقه قبل ثبت شده و خطای جدیدی پس از آن ثبت نشده است. فاصله مؤثر Cron: ${intervalMinutes} دقیقه.` };
+      checks.cron = { status: "ok", label: "سالم", detail: `آخرین اجرای Cron حدود ${Math.round(lastRunAgeMinutes)} دقیقه قبل ثبت شده و خطای جدیدی پس از آن ثبت نشده است. فاصله مؤثر Cron: ${cronIntervalMinutes} دقیقه.` };
     }
   } catch (error) {
     checks.cron = { status: "error", label: "خطا", detail: error instanceof Error ? error.message : String(error) };
   }
 
   const overall = Object.values(checks).some(c => c.status === "error") ? "error" : Object.values(checks).some(c => c.status === "warn" || c.status === "unknown") ? "warn" : "ok";
-  return json({ success: true, checkedAt, overall, checks, schedule: `هر ${Math.min(Math.max(Number((await env.DB.prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'cron_interval_minutes' LIMIT 1")).first())?.setting_value) || 5, 1), 1440)} دقیقه` });
+  return json({ success: true, checkedAt, overall, checks, schedule: `هر ${cronIntervalMinutes} دقیقه` });
 }
 
 function readCookie(header, name) { for (const item of String(header || "").split(";")) { const [key, ...rest] = item.trim().split("="); if (key === name) return rest.join("="); } return null; }
