@@ -23,25 +23,32 @@ export async function handleHealthApi(request, env) {
   }
 
   try {
-    await env.DB.prepare("CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT NOT NULL DEFAULT 'info', source TEXT NOT NULL, event TEXT, message TEXT, details_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
-    const row = await env.DB.prepare("SELECT level, message, created_at FROM system_logs WHERE source = 'sms_delivery_cron' ORDER BY id DESC LIMIT 1").first();
-    if (row) {
-      const ageMinutes = Math.max(0, (Date.now() - Date.parse(String(row.created_at).replace(" ", "T") + "Z")) / 60000);
-      const stale = ageMinutes > 15;
-      checks.cron = {
-        status: row.level === "error" || stale ? (row.level === "error" ? "error" : "warn") : "ok",
-        label: row.level === "error" ? "خطا" : stale ? "قدیمی" : "فعال",
-        detail: `${row.message || "رخداد Cron"} — آخرین رخداد ${Math.round(ageMinutes)} دقیقه قبل.`
-      };
+    const settings = await env.DB.prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('cron_last_run_at', 'cron_interval_minutes')").all();
+    const settingMap = Object.fromEntries((settings.results || []).map((row) => [row.setting_key, row.setting_value]));
+    const intervalMinutes = Math.min(Math.max(Number(settingMap.cron_interval_minutes) || 5, 1), 1440);
+    const lastRunAt = settingMap.cron_last_run_at ? new Date(String(settingMap.cron_last_run_at)) : null;
+    const lastRunAgeMinutes = lastRunAt && Number.isFinite(lastRunAt.getTime()) ? Math.max(0, (Date.now() - lastRunAt.getTime()) / 60000) : null;
+
+    const latestError = await env.DB.prepare("SELECT level, message, created_at FROM system_logs WHERE source = 'sms_delivery_cron' AND level = 'error' ORDER BY id DESC LIMIT 1").first();
+    const latestErrorAt = latestError?.created_at ? new Date(String(latestError.created_at).replace(" ", "T") + "Z") : null;
+    const errorAfterLastRun = latestErrorAt && Number.isFinite(latestErrorAt.getTime()) && lastRunAt && Number.isFinite(lastRunAt.getTime()) && latestErrorAt.getTime() > lastRunAt.getTime();
+
+    if (!lastRunAt || lastRunAgeMinutes === null) {
+      checks.cron = { status: "unknown", label: "بدون اجرای معتبر", detail: `هنوز زمان آخرین اجرای Cron ثبت نشده است. فاصله مؤثر Cron: ${intervalMinutes} دقیقه.` };
+    } else if (errorAfterLastRun) {
+      const errorAgeMinutes = Math.max(0, (Date.now() - latestErrorAt.getTime()) / 60000);
+      checks.cron = { status: "error", label: "خطا", detail: `${latestError.message || "Cron با خطا مواجه شد"} — آخرین خطا ${Math.round(errorAgeMinutes)} دقیقه قبل، پس از آخرین اجرای ثبت‌شده.` };
+    } else if (lastRunAgeMinutes > Math.max(intervalMinutes * 2, 15)) {
+      checks.cron = { status: "warn", label: "قدیمی", detail: `آخرین اجرای Cron حدود ${Math.round(lastRunAgeMinutes)} دقیقه قبل ثبت شده است؛ فاصله مؤثر Cron: ${intervalMinutes} دقیقه.` };
     } else {
-      checks.cron = { status: "unknown", label: "بدون رخداد", detail: "Cron هر ۵ دقیقه پیکربندی شده، اما هنوز رخداد sms_delivery_cron در System Logs ثبت نشده است. برای مشاهده اجرای موفق، ثبت Cron موفق را فعال کنید." };
+      checks.cron = { status: "ok", label: "سالم", detail: `آخرین اجرای Cron حدود ${Math.round(lastRunAgeMinutes)} دقیقه قبل ثبت شده و خطای جدیدی پس از آن ثبت نشده است. فاصله مؤثر Cron: ${intervalMinutes} دقیقه.` };
     }
   } catch (error) {
     checks.cron = { status: "error", label: "خطا", detail: error instanceof Error ? error.message : String(error) };
   }
 
   const overall = Object.values(checks).some(c => c.status === "error") ? "error" : Object.values(checks).some(c => c.status === "warn" || c.status === "unknown") ? "warn" : "ok";
-  return json({ success: true, checkedAt, overall, checks, schedule: "*/5 * * * *" });
+  return json({ success: true, checkedAt, overall, checks, schedule: `هر ${Math.min(Math.max(Number((await env.DB.prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'cron_interval_minutes' LIMIT 1")).first())?.setting_value) || 5, 1), 1440)} دقیقه` });
 }
 
 function readCookie(header, name) { for (const item of String(header || "").split(";")) { const [key, ...rest] = item.trim().split("="); if (key === name) return rest.join("="); } return null; }
