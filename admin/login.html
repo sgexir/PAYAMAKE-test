@@ -3,82 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>ورود مدیر | PAYAMAKE</title>
-
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/admin.css">
 </head>
-
 <body class="admin-body">
-
 <main class="auth-page">
-
     <div class="auth-card">
-
         <div class="auth-brand">
             <span class="auth-brand-main">PAYAMAKE</span>
             <span>پنل مدیریت</span>
         </div>
-
         <div class="auth-heading">
-            <h1>ورود به پنل مدیریت</h1>
-            <p>
-                برای ادامه، ایمیل و رمز عبور خود را وارد کنید.
-            </p>
+            <h1>ورود به پنل</h1>
+            <p>برای ادامه، اطلاعات حساب خود را وارد کنید.</p>
         </div>
-
         <form id="loginForm" class="admin-form" novalidate>
-
             <div class="form-group">
-                <label for="email">ایمیل</label>
-
-                <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autocomplete="username"
-                    inputmode="email"
-                    dir="ltr"
-                    placeholder="admin@example.com"
-                    required
-                >
+                <label for="username">نام کاربری</label>
+                <input id="username" name="username" type="text" autocomplete="username" inputmode="text" dir="ltr" maxlength="64" required>
             </div>
-
             <div class="form-group">
                 <label for="password">رمز عبور</label>
-
-                <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    dir="ltr"
-                    required
-                >
+                <input id="password" name="password" type="password" autocomplete="current-password" dir="ltr" required>
             </div>
-
-            <button
-                class="admin-button primary"
-                type="submit"
-            >
-                ورود
-            </button>
-
-            <div
-                id="loginMessage"
-                class="form-message"
-                role="alert"
-                aria-live="polite"
-            ></div>
-
+            <button class="admin-button primary" type="submit">ورود</button>
+            <div id="loginMessage" class="form-message" role="alert" aria-live="polite"></div>
         </form>
-
     </div>
-
 </main>
-
-<script src="../js/admin.js"></script>
-
+<script src="../js/admin-login.js"></script>
 </body>
 </html>
