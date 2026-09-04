@@ -1,6 +1,7 @@
 import { handleAdminAuth } from "./auth.js";
 import { handleAdminApi } from "./admin-api.js";
 import { handleSecurityAuth, handleSecurityApi } from "./security-auth.js";
+import { handleSecurityReport } from "./security-report.js";
 import { handleLeadsApi } from "./leads-api.js";
 import { handleMonitoringApi, getMonitoringSetting, writeMonitoringError, ensureMonitoringSettings } from "./monitoring-api.js";
 import { handleHealthApi } from "./health-api.js";
@@ -15,18 +16,12 @@ export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin");
     const url = new URL(request.url);
-
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(origin) });
-
     if (url.pathname === "/admin/" || url.pathname === "/admin/index.html") {
-      const cache = caches.default;
-      await cache.delete(request);
-      const assetUrl = new URL(request.url);
-      assetUrl.pathname = "/admin/index.html";
-      assetUrl.search = `?admin-build=${Date.now()}`;
+      const cache = caches.default; await cache.delete(request);
+      const assetUrl = new URL(request.url); assetUrl.pathname = "/admin/index.html"; assetUrl.search = `?admin-build=${Date.now()}`;
       const assetRequest = new Request(assetUrl.toString(), { method: "GET", headers: request.headers });
-      const response = await env.ASSETS.fetch(assetRequest);
-      const contentType = response.headers.get("content-type") || "";
+      const response = await env.ASSETS.fetch(assetRequest); const contentType = response.headers.get("content-type") || "";
       if (contentType.includes("text/html")) {
         let html = await response.text();
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-analytics\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
@@ -35,14 +30,14 @@ export default {
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-google-search\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         const adminScripts = '<script src="../js/admin-analytics.js?v=9"></script><script src="../js/admin-cloudflare.js?v=9"></script><script src="../js/admin-web-analytics.js?v=1"></script><script src="../js/admin-google-search.js?v=1"></script><script src="../js/security-center.js?v=1"></script>';
         if (html.includes("</body>")) html = html.replace("</body>", `${adminScripts}</body>`); else html += adminScripts;
-        const headers = new Headers(response.headers);
-        headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"); headers.set("Pragma", "no-cache"); headers.delete("ETag"); headers.delete("Expires");
+        const headers = new Headers(response.headers); headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"); headers.set("Pragma", "no-cache"); headers.delete("ETag"); headers.delete("Expires");
         return new Response(html, { status: response.status, statusText: response.statusText, headers });
       }
       return response;
     }
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     if (url.pathname === "/api/admin/login" || url.pathname === "/api/admin/me" || url.pathname === "/api/admin/logout") { const response = await handleSecurityAuth(request, env); return withCors(response, origin); }
+    if (url.pathname === "/api/admin/security/audit") { const response = await handleSecurityReport(request, env); return withCors(response, origin); }
     if (url.pathname.startsWith("/api/admin/security/")) { const response = await handleSecurityApi(request, env); return withCors(response, origin); }
     if (url.pathname === "/api/admin/analytics/bing/callback") { const response = await handleBingApi(request, env); return withCors(response, origin); }
     if (url.pathname.startsWith("/api/admin/analytics/bing/")) { const response = await handleBingApi(request, env); return withCors(response, origin); }
