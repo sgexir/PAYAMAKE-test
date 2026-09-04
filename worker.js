@@ -1,5 +1,6 @@
 import { handleAdminAuth } from "./auth.js";
 import { handleAdminApi } from "./admin-api.js";
+import { handleSecurityAuth, handleSecurityApi } from "./security-auth.js";
 import { handleLeadsApi } from "./leads-api.js";
 import { handleMonitoringApi, getMonitoringSetting, writeMonitoringError, ensureMonitoringSettings } from "./monitoring-api.js";
 import { handleHealthApi } from "./health-api.js";
@@ -32,7 +33,7 @@ export default {
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-cloudflare(?:-loader)?\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-web-analytics\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-google-search\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
-        const adminScripts = '<script src="../js/admin-analytics.js?v=9"></script><script src="../js/admin-cloudflare.js?v=9"></script><script src="../js/admin-web-analytics.js?v=1"></script><script src="../js/admin-google-search.js?v=1"></script>';
+        const adminScripts = '<script src="../js/admin-analytics.js?v=9"></script><script src="../js/admin-cloudflare.js?v=9"></script><script src="../js/admin-web-analytics.js?v=1"></script><script src="../js/admin-google-search.js?v=1"></script><script src="../js/security-center.js?v=1"></script>';
         if (html.includes("</body>")) html = html.replace("</body>", `${adminScripts}</body>`); else html += adminScripts;
         const headers = new Headers(response.headers);
         headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"); headers.set("Pragma", "no-cache"); headers.delete("ETag"); headers.delete("Expires");
@@ -41,6 +42,8 @@ export default {
       return response;
     }
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
+    if (url.pathname === "/api/admin/login" || url.pathname === "/api/admin/me" || url.pathname === "/api/admin/logout") { const response = await handleSecurityAuth(request, env); return withCors(response, origin); }
+    if (url.pathname.startsWith("/api/admin/security/")) { const response = await handleSecurityApi(request, env); return withCors(response, origin); }
     if (url.pathname === "/api/admin/analytics/bing/callback") { const response = await handleBingApi(request, env); return withCors(response, origin); }
     if (url.pathname.startsWith("/api/admin/analytics/bing/")) { const response = await handleBingApi(request, env); return withCors(response, origin); }
     if (url.pathname === "/api/admin/analytics/google/callback") { const response = await handleGoogleSearchConsoleApi(request, env); return withCors(response, origin); }
@@ -89,11 +92,7 @@ async function runDeliveryCron(env, event) {
     if (!Number.isFinite(scheduledAt)) return;
     const scheduledMinute = Math.floor(scheduledAt / 60000);
     if (scheduledMinute % intervalMinutes !== 0) return;
-
-    await env.DB.prepare("INSERT INTO system_settings (setting_key, setting_value, updated_at) VALUES ('cron_last_run_at', ?, CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP")
-      .bind(new Date(scheduledAt).toISOString())
-      .run();
-
+    await env.DB.prepare("INSERT INTO system_settings (setting_key, setting_value, updated_at) VALUES ('cron_last_run_at', ?, CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP").bind(new Date(scheduledAt).toISOString()).run();
     const result = await refreshPendingSmsDeliveries(env); const hasErrors = Boolean(result.errors?.length);
     if (hasErrors) await writeMonitoringError(env.DB, "warn", "sms_delivery_cron", "SMS delivery cron encountered provider errors", { ...result, durationMs: Date.now() - startedAt, intervalMinutes });
     else if ((await getMonitoringSetting(env.DB, "log_successful_crons")) === "1") { await ensureSystemLogsTable(env.DB); await writeSystemLog(env.DB, "info", "sms_delivery_cron", "SMS delivery cron completed", { ...result, durationMs: Date.now() - startedAt, intervalMinutes }); }
