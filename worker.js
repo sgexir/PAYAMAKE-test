@@ -89,6 +89,11 @@ async function runDeliveryCron(env, event) {
     if (!Number.isFinite(scheduledAt)) return;
     const scheduledMinute = Math.floor(scheduledAt / 60000);
     if (scheduledMinute % intervalMinutes !== 0) return;
+
+    await env.DB.prepare("INSERT INTO system_settings (setting_key, setting_value, updated_at) VALUES ('cron_last_run_at', ?, CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP")
+      .bind(new Date(scheduledAt).toISOString())
+      .run();
+
     const result = await refreshPendingSmsDeliveries(env); const hasErrors = Boolean(result.errors?.length);
     if (hasErrors) await writeMonitoringError(env.DB, "warn", "sms_delivery_cron", "SMS delivery cron encountered provider errors", { ...result, durationMs: Date.now() - startedAt, intervalMinutes });
     else if ((await getMonitoringSetting(env.DB, "log_successful_crons")) === "1") { await ensureSystemLogsTable(env.DB); await writeSystemLog(env.DB, "info", "sms_delivery_cron", "SMS delivery cron completed", { ...result, durationMs: Date.now() - startedAt, intervalMinutes }); }
