@@ -127,6 +127,31 @@
     document.head.appendChild(style);
   }
 
+  function installSecurityCard() {
+    const security = $('#security');
+    if (!security || security.querySelector('#securityCenterCard')) return;
+    const grid = security.querySelector('.dashboard-grid');
+    if (!grid) return;
+    const card = document.createElement('button');
+    card.id = 'securityCenterCard';
+    card.type = 'button';
+    card.className = 'dashboard-card';
+    card.setAttribute('aria-label', 'باز کردن مرکز امنیت');
+    card.innerHTML = '<div class="card-icon">♙</div><div><span class="card-label">مرکز امنیت</span><strong>مدیریت حساب و دسترسی</strong></div>';
+    card.style.cssText = 'width:100%;border:1px solid rgba(15,23,42,.09);cursor:pointer;text-align:right;font:inherit;';
+    card.addEventListener('click', () => {
+      const button = document.getElementById('securityAccountButton');
+      if (button) { button.click(); return; }
+      const existingModal = document.querySelector('.security-modal');
+      if (existingModal) { existingModal.classList.add('open'); return; }
+      const script = document.createElement('script');
+      script.src = '../js/security-center.js?v=5';
+      script.onload = () => document.getElementById('securityAccountButton')?.click();
+      document.body.appendChild(script);
+    });
+    grid.appendChild(card);
+  }
+
   async function hydrateSmsTemplates() {
     const cards = $$('#templatesList .template-card');
     if (!cards.length) return;
@@ -177,6 +202,7 @@
     if (!(location.pathname === '/admin/' || location.pathname === '/admin/index.html')) return;
     injectStyles();
     setTimeout(installSystemLogAccordion, 50);
+    setTimeout(installSecurityCard, 100);
     $('#refreshSystemLogs')?.addEventListener('click', async () => { const b = $('#refreshSystemLogs'); b.disabled = true; const old = b.textContent; b.textContent = 'در حال بروزرسانی...'; try { await loadSystemLogs(1, true); } finally { b.disabled = false; b.textContent = old; } });
     installSmsTemplateHydration();
   });
