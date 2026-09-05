@@ -1,1 +1,43 @@
-(()=>{const start=()=>{let attempts=0;const init=()=>{const security=document.getElementById('security');if(security){const grid=security.querySelector('.dashboard-grid');if(grid&&!document.getElementById('securityCenterCard')){const card=document.createElement('button');card.id='securityCenterCard';card.type='button';card.className='dashboard-card';card.style.cssText='border:0;text-align:right;cursor:pointer;font:inherit;width:100%;';card.innerHTML='<div class="card-icon">◈</div><div><span class="card-label">مرکز امنیت</span><strong>مدیریت حساب و امنیت</strong></div>';grid.appendChild(card);card.addEventListener('click',()=>{const button=document.getElementById('securityAccountButton');if(button){button.click();return}const script=document.createElement('script');script.src='../js/security-center.js?v=5';script.onload=()=>document.getElementById('securityAccountButton')?.click();document.body.appendChild(script)})}}const logout=document.getElementById('logoutButton');if(logout){const parent=logout.parentElement;if(parent){parent.classList.add('admin-header-actions');parent.style.display='flex';parent.style.alignItems='center';parent.style.gap='14px'}}if((!security||!security.querySelector('.dashboard-grid'))&&++attempts<100)setTimeout(init,100)};init()};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start()})();
+(()=>{
+  const ADMIN_LOGIN='/admin/login';
+  const checkSession=async()=>{
+    if(location.pathname==='/admin/login') return;
+    try{
+      const response=await fetch('/api/admin/me',{credentials:'include',cache:'no-store'});
+      if(response.status===401){ location.replace(ADMIN_LOGIN); return; }
+      if(!response.ok) return;
+      const data=await response.json().catch(()=>null);
+      if(!data?.authenticated) location.replace(ADMIN_LOGIN);
+    }catch(_error){}
+  };
+  const start=()=>{
+    let attempts=0;
+    const init=()=>{
+      const security=document.getElementById('security');
+      if(security){
+        const grid=security.querySelector('.dashboard-grid');
+        if(grid&&!document.getElementById('securityCenterCard')){
+          const card=document.createElement('button');
+          card.id='securityCenterCard'; card.type='button'; card.className='dashboard-card';
+          card.style.cssText='border:0;text-align:right;cursor:pointer;font:inherit;width:100%;';
+          card.innerHTML='<div class="card-icon">◈</div><div><span class="card-label">مرکز امنیت</span><strong>مدیریت حساب و امنیت</strong></div>';
+          grid.appendChild(card);
+          card.addEventListener('click',()=>{
+            const button=document.getElementById('securityAccountButton');
+            if(button){button.click();return}
+            const script=document.createElement('script'); script.src='../js/security-center.js?v=8';
+            script.onload=()=>document.getElementById('securityAccountButton')?.click();
+            document.body.appendChild(script);
+          });
+        }
+      }
+      const logout=document.getElementById('logoutButton');
+      if(logout){const parent=logout.parentElement;if(parent){parent.classList.add('admin-header-actions');parent.style.display='flex';parent.style.alignItems='center';parent.style.gap='14px';}}
+      if((!security||!security.querySelector('.dashboard-grid'))&&++attempts<100)setTimeout(init,100);
+    };
+    init();
+    checkSession();
+    setInterval(checkSession,5000);
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
