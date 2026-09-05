@@ -1,0 +1,1 @@
+(()=>{document.addEventListener('DOMContentLoaded',()=>{const logout=document.getElementById('logoutButton');if(!logout)return;const parent=logout.parentElement;if(!parent)return;if(!parent.classList.contains('admin-header-actions'))parent.classList.add('admin-header-actions');parent.style.display='flex';parent.style.alignItems='center';parent.style.gap='14px';});})();
