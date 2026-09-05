@@ -19,7 +19,7 @@ async function api(path,options={}){
   });
   const data=await response.json().catch(()=>({error:'پاسخ نامعتبر'}));
   if(response.status===401){
-    location.href='../login.html';
+    location.href='/admin/login';
     throw new Error('احراز هویت لازم است.');
   }
   if(!response.ok||data.success===false) throw new Error(data.error||'خطای سرور');
@@ -256,14 +256,14 @@ function init(){
         const result=await api('/api/admin/security/sessions/revoke-all',{method:'POST',body:JSON.stringify({adminId:id})});
         if(id===currentAdminId){
           alert(`همه ${result.revoked||0} نشست شما لغو شد.`);
-          location.href='../login.html';
+          location.href='/admin/login';
           return;
         }
       }else if(action==='reset_mfa'){
         if(!confirm('Reset MFA روش‌های MFA و کدهای بازیابی این حساب را حذف و همه نشست‌های آن را لغو می‌کند. بعد از آن باید MFA دوباره راه‌اندازی شود. ادامه می‌دهید؟')) return;
         await api('/api/admin/security/admins/action',{method:'POST',body:JSON.stringify({adminId:id,action})});
         alert('MFA ریست شد. این حساب در ورود بعدی باید MFA را دوباره راه‌اندازی و تأیید کند.');
-        if(id===currentAdminId){location.href='../login.html';return;}
+        if(id===currentAdminId){location.href='/admin/login';return;}
       }else{
         const body={adminId:id,action};
         if(action==='reset_password'){
