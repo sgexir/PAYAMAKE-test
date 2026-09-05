@@ -28,7 +28,7 @@ export default {
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-cloudflare(?:-loader)?\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-web-analytics\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
         html = html.replace(/<script[^>]+src=["']\.\.\/js\/admin-google-search\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, "");
-        const adminScripts = '<script src="../js/admin-analytics.js?v=9"></script><script src="../js/admin-cloudflare.js?v=9"></script><script src="../js/admin-web-analytics.js?v=1"></script><script src="../js/admin-google-search.js?v=1"></script><script src="../js/security-center.js?v=1"></script>';
+        const adminScripts = '<script src="../js/admin-analytics.js?v=9"></script><script src="../js/admin-cloudflare.js?v=9"></script><script src="../js/admin-web-analytics.js?v=1"></script><script src="../js/admin-google-search.js?v=1"></script><script src="../js/security-center.js?v=2"></script>';
         if (html.includes("</body>")) html = html.replace("</body>", `${adminScripts}</body>`); else html += adminScripts;
         const headers = new Headers(response.headers); headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"); headers.set("Pragma", "no-cache"); headers.delete("ETag"); headers.delete("Expires");
         return new Response(html, { status: response.status, statusText: response.statusText, headers });
