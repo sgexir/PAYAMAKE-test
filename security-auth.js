@@ -158,7 +158,7 @@ async function loginActivity(request, db) {
 }
 
 async function listAdmins(db) {
-  const rows = await db.prepare(`SELECT a.id, a.full_name, a.username, a.email, a.is_active, a.last_login_at, a.created_at, EXISTS(SELECT 1 FROM mfa_methods m WHERE m.admin_id=a.id AND m.is_enabled=1 AND m.is_verified=1) AS mfa_enabled, (SELECT COUNT(*) FROM admin_sessions s WHERE s.admin_id=a.id AND s.revoked_at IS NULL AND s.expires_at>CURRENT_TIMESTAMP) AS active_sessions FROM admins a ORDER BY a.id ASC`).all();
+  const rows = await db.prepare(`SELECT a.id, a.full_name, a.username, a.email, a.is_active, a.last_login_at, a.created_at, CASE WHEN a.id=(SELECT MIN(id) FROM admins) THEN 'main' ELSE 'defense' END AS account_type, CASE WHEN a.id=(SELECT MIN(id) FROM admins) THEN 'مدیر اصلی (Main Admin)' ELSE 'مدیر دفاعی (Defense Admin)' END AS account_type_label, a.last_login_at, EXISTS(SELECT 1 FROM mfa_methods m WHERE m.admin_id=a.id AND m.is_enabled=1 AND m.is_verified=1) AS mfa_enabled, (SELECT COUNT(*) FROM admin_sessions s WHERE s.admin_id=a.id AND s.revoked_at IS NULL AND s.expires_at>CURRENT_TIMESTAMP) AS active_sessions FROM admins a ORDER BY a.id ASC`).all();
   return json({ success: true, admins: rows.results || [] });
 }
 
@@ -171,8 +171,8 @@ async function createAdmin(request, db, actor) {
   const exists = await db.prepare("SELECT id FROM admins WHERE username = ? COLLATE NOCASE").bind(username).first(); if (exists) return json({ success: false, error: "این نام کاربری قبلاً استفاده شده است." }, 409);
   const hash = await hashPassword(password);
   const result = await db.prepare("INSERT INTO admins (full_name, username, email, password_hash, is_active) VALUES (?, ?, ?, ?, 1)").bind(fullName, username, email, hash).run();
-  const id = Number(result.meta?.last_row_id || 0); await audit(db, actor.admin_id, "admin_created", id, actor.ip_address, { username });
-  return json({ success: true, admin: { id, username, fullName, email } });
+  const id = Number(result.meta?.last_row_id || 0); await audit(db, actor.admin_id, "admin_created", id, actor.ip_address, { username, accountType: "defense" });
+  return json({ success: true, admin: { id, username, fullName, email, accountType: "defense" } });
 }
 
 async function adminAction(request, db, actor) {
@@ -181,6 +181,8 @@ async function adminAction(request, db, actor) {
   if (!target) return json({ success: false, error: "حساب پیدا نشد." }, 404);
   if (action === "disable") {
     if (target.id === actor.admin_id) return json({ success: false, error: "نمی‌توانید حساب فعلی خود را غیرفعال کنید." }, 400);
+    const main = await db.prepare("SELECT MIN(id) AS id FROM admins").first();
+    if (Number(main?.id) === target.id && Number(actor.admin_id) === Number(main?.id)) return json({ success: false, error: "مدیر اصلی نمی‌تواند خودش را غیرفعال کند." }, 400);
     const count = await db.prepare("SELECT COUNT(*) AS c FROM admins WHERE is_active=1").first(); if (Number(count?.c || 0) <= 1) return json({ success: false, error: "حداقل یک مدیر فعال باید باقی بماند." }, 400);
     await db.prepare("UPDATE admins SET is_active=0, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(targetId).run();
     await db.prepare("UPDATE admin_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE admin_id=? AND revoked_at IS NULL").bind(targetId).run();
@@ -189,7 +191,7 @@ async function adminAction(request, db, actor) {
   if (action === "enable") { await db.prepare("UPDATE admins SET is_active=1, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(targetId).run(); await audit(db, actor.admin_id, "admin_enabled", targetId, actor.ip_address, null); return json({ success: true }); }
   if (action === "reset_mfa") { await db.prepare("DELETE FROM recovery_codes WHERE admin_id=?").bind(targetId).run(); await db.prepare("DELETE FROM mfa_methods WHERE admin_id=?").bind(targetId).run(); await db.prepare("DELETE FROM otp_challenges WHERE admin_id=?").bind(targetId).run(); await db.prepare("UPDATE admin_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE admin_id=? AND revoked_at IS NULL").bind(targetId).run(); await audit(db, actor.admin_id, "mfa_reset", targetId, actor.ip_address, null); return json({ success: true }); }
   if (action === "reset_recovery") { const codes = await generateRecoveryCodes(db, targetId); await audit(db, actor.admin_id, "recovery_codes_reset", targetId, actor.ip_address, null); return json({ success: true, recoveryCodes: codes }); }
-  if (action === "reset_password") { const password = String(body?.password || ""); if (password.length < 12 || password.length > 256) return json({ success: false, error: "رمز عبور باید حداقل ۱۲ کاراکتر باشد." }, 400); await db.prepare("UPDATE admins SET password_hash=?, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(await hashPassword(password), targetId).run(); await db.prepare("UPDATE admin_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE admin_id=? AND revoked_at IS NULL").bind(targetId).run(); await audit(db, actor.admin_id, "password_reset", targetId, actor.ip_address, null); return json({ success: true }); }
+  if (action === "reset_password") { const password = String(body?.password || ""); if (password.length < 12 || password.length > 256) return json({ success: false, error: "رمز عبور باید حداقل ۱۲ کاراکتر باشد." }, 400); await db.prepare("UPDATE admins SET password_hash=?, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(await hashPassword(password), targetId).run(); await db.prepare("UPDATE admin_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE admin_id=? AND id<>? AND revoked_at IS NULL").bind(targetId, actor.session_id).run(); await audit(db, actor.admin_id, "password_reset", targetId, actor.ip_address, null); return json({ success: true }); }
   return json({ success: false, error: "عملیات پشتیبانی نمی‌شود." }, 400);
 }
 
